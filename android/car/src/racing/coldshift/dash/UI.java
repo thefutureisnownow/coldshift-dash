@@ -45,8 +45,8 @@ public class UI extends View implements Runnable {
         act = a;
         all = new Page[] {
             new DrivePage(a), new MediaPage(a), new MapsPage(a), new TrackPage(a), new SensorsPage(a),
-            new DashcamPage(a), new LogPage(a), new ConvoyPage(a), new SettingsPage(a, this)};
-        String[] names = {"drive", "media", "maps", "track", "sensors", "dashcam", "log", "convoy", "settings"};
+            new DashcamPage(a), new LogPage(a), new ConvoyPage(a), new SettingsPage(a, this), new MorePage(a, this)};
+        String[] names = {"drive", "media", "maps", "track", "sensors", "dashcam", "log", "convoy", "settings", "more"};
         for (int i = 0; i < all.length; i++) byName.put(names[i], all[i]);
         choosePages();
         // the page that was showing when the app last closed comes back
@@ -76,9 +76,42 @@ public class UI extends View implements Runnable {
     Page current() { return pages[cur]; }
 
     /** Shows the page with that name, when the profile shows it. */
-    void show(String name) {
-        int i = java.util.Arrays.asList(pages).indexOf(byName.get(name));
+    void show(String name) { show(byName.get(name)); }
+
+    void show(Page p) {
+        int i = java.util.Arrays.asList(pages).indexOf(p);
         if (i >= 0) select(i);
+    }
+
+    // ---- the tab bar: the few pages a driver reaches for, and More for the rest ----
+
+    private static final int BAR = 5;                       // tabs, More among them
+    private static final String[] ON_BAR = {"drive", "maps", "media", "dashcam"};
+
+    /**
+     * The tabs, left to right. Few enough pages all get one; else Drive, Maps, Media and Dashcam (those this
+     * car shows, made up to four from the others), Convoy too while in a convoy, and More last.
+     */
+    java.util.List<Page> bar() {
+        Page more = byName.get("more");
+        java.util.List<Page> rest = new java.util.ArrayList<Page>(java.util.Arrays.asList(pages));
+        rest.remove(more);
+        if (rest.size() <= BAR) return rest;
+        java.util.List<Page> out = new java.util.ArrayList<Page>();
+        for (String n : ON_BAR) if (rest.contains(byName.get(n))) out.add(byName.get(n));
+        for (Page p : rest) if (out.size() < BAR - 1 && !out.contains(p) && p != byName.get("settings")) out.add(p);
+        Page convoy = byName.get("convoy");
+        if (rest.contains(convoy) && !out.contains(convoy) && Convoy.get(act).inConvoy()) out.add(convoy);
+        out.add(more);
+        return out;
+    }
+
+    /** The pages reached through More. */
+    java.util.List<Page> behind() {
+        java.util.List<Page> out = new java.util.ArrayList<Page>(java.util.Arrays.asList(pages));
+        out.removeAll(bar());
+        out.remove(byName.get("more"));
+        return out;
     }
 
     /** Shows Settings on its Devices tab, where an OBD adapter is chosen. */
@@ -96,6 +129,7 @@ public class UI extends View implements Runnable {
         show.add(byName.get("drive"));                      // what a driver glances at: always there, first
         for (String n : Profile.pages(act)) show.add(byName.get(n));
         show.add(byName.get("settings"));
+        show.add(byName.get("more"));
         pages = show.toArray(new Page[0]);
     }
 
@@ -299,17 +333,28 @@ public class UI extends View implements Runnable {
         c.drawRect(-e, TABY, 1280 + e, 720, paint);
         paint.setColor(Theme.accent(0x33));
         c.drawRect(-e, TABY, 1280 + e, TABY + 1, paint);
-        int n = pages.length;
+        java.util.List<Page> bar = bar();
+        Page more = byName.get("more");
+        boolean hidden = !bar.contains(pages[cur]);         // a page from More shows: More is where it lives
+        int n = bar.size();
         float tw = (1280f + 2 * e - 8 * (n + 1)) / n;        // the tabs share the whole width
         for (int i = 0; i < n; i++) {
+            Page p = bar.get(i);
+            boolean on = p == pages[cur] || hidden && p == more;
             float l = 8 - e + i * (tw + 8);
             rect.set(l, TABY + 9, l + tw, 712);
-            Theme.button(c, rect, i == cur, 12);
-            Theme.text(c, pages[i].label(), l + tw / 2, TABY + 52, 22,
-                i == cur ? 0xffffffff : 0xffa9bcd6, Theme.sans, Theme.CENTER);
-            if (pages[i].attention()) {
+            Theme.button(c, rect, on, 12);
+            int ink = on ? 0xffffffff : 0xffa9bcd6;
+            android.graphics.Typeface tf = on ? Theme.bold : Theme.sans;
+            float lw = Theme.width(p.label(), 24, tf), iw = 38, x = l + (tw - lw - iw - 12) / 2;     // picture and word, centred together
+            if (Icons.draw(c, act, p.icon(), x + iw / 2, TABY + 44, iw, ink)) x += iw + 12;
+            else x = l + (tw - lw) / 2;
+            Theme.text(c, p.label(), x, TABY + 53, 24, ink, tf, Theme.LEFT);
+            boolean dot = p.attention();
+            if (p == more) for (Page b : behind()) dot |= b.attention();
+            if (dot) {
                 paint.setColor(Theme.GOLD);
-                c.drawCircle(l + tw - 16, TABY + 25, 6, paint);
+                c.drawCircle(l + tw - 18, TABY + 27, 7, paint);
             }
         }
     }
@@ -340,10 +385,11 @@ public class UI extends View implements Runnable {
             Dashcam.get(act).toggleMark();
             used = true;
         } else if (a == MotionEvent.ACTION_DOWN && m.getY() >= TABY) {
-            int n = pages.length;
+            java.util.List<Page> bar = bar();
+            int n = bar.size();
             float ex = Screen.extra(this);
             int i = (int) ((m.getX() + ex) / ((1280f + 2 * ex) / n));
-            select(Math.max(0, Math.min(n - 1, i)));
+            show(bar.get(Math.max(0, Math.min(n - 1, i))));
             used = true;
         } else {
             if (pages[cur].wide()) m.offsetLocation(Screen.extra(this), 0);    // into the page's own width
