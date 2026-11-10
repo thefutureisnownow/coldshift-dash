@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="racing.coldshift.dash"
+    android:versionCode="1"
+    android:versionName="0.1">
+    <!-- no <uses-sdk>: build.sh sets the SDK versions, one pair for each APK -->
+    <!-- RouterService's replies: only apps signed like this one can receive them -->
+    <permission android:name="racing.coldshift.dash.ROUTER" android:protectionLevel="signature" />
+    <uses-permission android:name="racing.coldshift.dash.ROUTER" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Bluetooth: the old permissions up to Android 11, Nearby devices from Android 12 (asked for in Permissions;
+         scanning says it never works out where the phone is, so it needs no location there) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- the modern APK: what newer Android asks of an app (Android 4.4 does not read these) -->
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission-sdk-23 android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission-sdk-23 android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission-sdk-23 android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission-sdk-23 android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <application android:label="coldshift.dash" android:icon="@drawable/ic_launcher" android:allowBackup="false"
+        android:resizeableActivity="true" android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true">
+        <!-- the modern APK: a convoy hosted on a phone, or a server on the local network, is plain HTTP;
+             files by path on the SD card on Android 10 (later ones need All files access, Permissions) -->
+        <!-- newer Android would letterbox an app built for 4.4 to 1.86:1; the UI fits any width (Screen) -->
+        <meta-data android:name="android.max_aspect" android:value="2.5" />
+        <activity android:name=".Main" android:exported="true"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service android:name=".Watchdog" android:exported="false" />
+        <service android:name=".PlayerService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+        <service android:name=".DashcamService" android:exported="false" android:foregroundServiceType="camera|microphone" />
+        <service android:name=".DriveService" android:exported="false" android:foregroundServiceType="location" />
+        <service android:name=".RouterService" android:exported="false" android:process=":router" />
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

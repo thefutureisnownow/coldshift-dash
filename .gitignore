@@ -1,0 +1,21 @@
+# Local environment and secrets (.env may link to a key file: never commit it)
+.env
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Build output
+*.apk
+android/car/build/
+
+# Downloaded by android/car/libs/fetch.sh (not committed: see NOTICE)
+android/car/libs/*.jar
+android/car/assets/mapsforge/
+android/car/assets/symbols/
+android/car/assets/patterns/
+android/car/assets/brouter/
+
+# tools/car-adb.sh logs and screenshots
+car-logs/
+/build/

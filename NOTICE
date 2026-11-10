@@ -1,0 +1,66 @@
+Coldshift Dash
+Copyright (c) 2026 The Future is Now-Now (PTY) Ltd
+
+The app is under the MIT License (LICENSE), except where this file says
+otherwise. The APKs also contain the third-party software and
+data below. Their jars and data are not committed here: android/car/libs/fetch.sh
+downloads or builds them, and android/car/build.sh puts them in the APKs.
+
+
+Third-party software in the APKs
+================================
+
+Mapsforge 0.23.0 (map rendering)
+  https://github.com/mapsforge/mapsforge
+  License: GNU Lesser General Public License v3.0 (LGPL-3.0)
+  Jars: mapsforge-core, mapsforge-map, mapsforge-map-reader,
+  mapsforge-map-android, mapsforge-themes (from Maven Central).
+  The map theme's symbols and patterns (assets/symbols, assets/patterns) come
+  from the mapsforge-themes jar and carry the licences stated there.
+  android/car/assets/maptheme/quiet.xml is derived from Mapsforge's bundled
+  default.xml render theme, and so is under the LGPL-3.0, not MIT.
+  This repository holds the app's complete source and build scripts, so the
+  APKs can be rebuilt against a modified Mapsforge.
+
+BRouter 1.7.10 (offline routing)
+  https://github.com/abrensch/brouter
+  License: MIT. Copyright (c) the BRouter authors.
+  Built from the release source by fetch.sh, which also copies the car-vario
+  routing profile, lookups.dat and BRouter's LICENSE into assets/brouter.
+
+ZXing core 3.3.3 (QR code reading, for joining a convoy)
+  https://github.com/zxing/zxing
+  License: Apache License 2.0. Copyright (c) the ZXing authors.
+
+AndroidSVG 1.4 (SVG rendering)
+  https://github.com/BigBadaboom/androidsvg
+  License: Apache License 2.0. Copyright (c) Paul LeBeau, Cave Rock Software Ltd.
+
+Root certificates (android/car/assets/certs)
+  ISRG Root X1 and ISRG Root X2 (Internet Security Research Group, Let's
+  Encrypt) and GTS Root R1 and GTS Root R4 (Google Trust Services LLC), as
+  published by their certificate authorities. They let Android 4.4, whose own
+  certificate store is out of date, make TLS connections to current servers.
+  They are public certificates, included unmodified.
+
+
+Map data
+========
+
+The maps (download.mapsforge.org) and routing tiles (brouter.de) the app reads
+are made from OpenStreetMap data, (c) OpenStreetMap contributors, under the
+Open Database License (ODbL 1.0). They are not part of this repository.
+
+
+Art, brand and voice
+====================
+
+The navigation voice pack (android/car/assets/voice/angie) was generated with
+ElevenLabs text to speech. The built-in vehicle look (android/car/assets/profile)
+was generated with an image model. Both are our
+own work and are under the MIT License with the rest of this repository.
+The profile's wordmark is set in Roboto (Apache License 2.0).
+
+The MIT License covers the code and these assets. It grants no rights to the
+names "Coldshift", "Coldshift Dash" or "TFINN", or to their logos
+(brand/, android/car/assets/brand, android/car/res), as trademarks.
