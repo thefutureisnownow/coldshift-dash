@@ -53,11 +53,20 @@ final class Voice implements MediaPlayer.OnCompletionListener, MediaPlayer.OnErr
     synchronized List<Pack> packs() {
         if (packs != null) return packs;
         Map<String, Pack> byId = new java.util.LinkedHashMap<String, Pack>();
+        // the packs that come with the app (assets/voice/<id>), the default one first
+        java.util.List<String> built = new ArrayList<String>();
+        built.add(BUILT_IN);
         try {
-            Pack p = read(ctx.getAssets().open("voice/" + BUILT_IN + "/voice.json"), null);
-            if (p != null) byId.put(p.id, p);
-        } catch (Exception e) {
-            android.util.Log.w("Voice", "no built-in voice", e);
+            String[] dirs = ctx.getAssets().list("voice");
+            if (dirs != null) { java.util.Arrays.sort(dirs); for (String d : dirs) if (!built.contains(d)) built.add(d); }
+        } catch (Exception e) { /* only the default then */ }
+        for (String id : built) {
+            try {
+                Pack p = read(ctx.getAssets().open("voice/" + id + "/voice.json"), null);
+                if (p != null) byId.put(p.id, p);
+            } catch (Exception e) {
+                android.util.Log.w("Voice", "no built-in voice " + id, e);
+            }
         }
         for (String v : Storage.volumes()) {
             File[] dirs = new File(v, Storage.DIR + "/voice").listFiles();
