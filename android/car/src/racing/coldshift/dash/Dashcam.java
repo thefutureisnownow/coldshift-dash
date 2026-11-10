@@ -75,7 +75,11 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     private final Handler h;
     private final Handler main = new Handler(Looper.getMainLooper());
     private Camera cam;
-    private SurfaceTexture st;
+    // What the camera draws its preview into. One for the app's whole life: made detached from any GL
+    // context, so the Dashcam page can show it in a TextureView (the live view while recording) and let
+    // go of it again, across clips and across the camera closing and reopening.
+    private volatile SurfaceTexture st;
+    private volatile boolean stShowable;
     private MediaRecorder rec;
     private File curFile;
     private FileWriter srt;
@@ -348,7 +352,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             cam.setParameters(p);
             applyCameraOptions();
             readCameraOptions();
-            st = new SurfaceTexture(10);
+            if (st == null) st = previewTexture();
             cam.setPreviewTexture(st);
             cam.startPreview();
             return true;
@@ -468,8 +472,61 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             try { cam.release(); } catch (Throwable t) { /* ignore */ }
             cam = null;
         }
-        if (st != null) { try { st.release(); } catch (Throwable t) { /* ignore */ } st = null; }
+        // st stays: a view may be showing it, and the next open uses it again
     }
+
+    /**
+     * The preview's texture, detached so a TextureView can take it. Android 8 can make one that way; before
+     * that it is made on a throwaway GL context and detached from it. Where that fails the texture is as it
+     * always was (never shown), and there is no live view while recording.
+     */
+    private SurfaceTexture previewTexture() {
+        try {
+            SurfaceTexture s = Api.SDK >= 26 ? new SurfaceTexture(false) : detachedByGl();
+            stShowable = true;
+            return s;
+        } catch (Throwable t) {
+            android.util.Log.w("Dashcam", "no detached preview texture: no live view while recording", t);
+            stShowable = false;
+            return new SurfaceTexture(10);
+        }
+    }
+
+    private static SurfaceTexture detachedByGl() {
+        android.opengl.EGLDisplay d = android.opengl.EGL14.eglGetDisplay(android.opengl.EGL14.EGL_DEFAULT_DISPLAY);
+        int[] v = new int[2];
+        if (!android.opengl.EGL14.eglInitialize(d, v, 0, v, 1)) throw new RuntimeException("no EGL");
+        android.opengl.EGLConfig[] cfg = new android.opengl.EGLConfig[1];
+        int[] n = new int[1];
+        android.opengl.EGL14.eglChooseConfig(d, new int[] {android.opengl.EGL14.EGL_RENDERABLE_TYPE, android.opengl.EGL14.EGL_OPENGL_ES2_BIT,
+            android.opengl.EGL14.EGL_SURFACE_TYPE, android.opengl.EGL14.EGL_PBUFFER_BIT, android.opengl.EGL14.EGL_NONE}, 0, cfg, 0, 1, n, 0);
+        if (n[0] < 1) throw new RuntimeException("no EGL config");
+        android.opengl.EGLContext ctx = android.opengl.EGL14.eglCreateContext(d, cfg[0], android.opengl.EGL14.EGL_NO_CONTEXT,
+            new int[] {android.opengl.EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, android.opengl.EGL14.EGL_NONE}, 0);
+        android.opengl.EGLSurface pb = android.opengl.EGL14.eglCreatePbufferSurface(d, cfg[0],
+            new int[] {android.opengl.EGL14.EGL_WIDTH, 1, android.opengl.EGL14.EGL_HEIGHT, 1, android.opengl.EGL14.EGL_NONE}, 0);
+        try {
+            if (!android.opengl.EGL14.eglMakeCurrent(d, pb, pb, ctx)) throw new RuntimeException("no GL context");
+            int[] tex = new int[1];
+            android.opengl.GLES20.glGenTextures(1, tex, 0);
+            SurfaceTexture s = new SurfaceTexture(tex[0]);
+            s.detachFromGLContext();
+            android.opengl.GLES20.glDeleteTextures(1, tex, 0);
+            return s;
+        } finally {
+            // the display is shared with the app's own drawing: only this context and surface go
+            android.opengl.EGL14.eglMakeCurrent(d, android.opengl.EGL14.EGL_NO_SURFACE, android.opengl.EGL14.EGL_NO_SURFACE,
+                android.opengl.EGL14.EGL_NO_CONTEXT);
+            android.opengl.EGL14.eglDestroySurface(d, pb);
+            android.opengl.EGL14.eglDestroyContext(d, ctx);
+        }
+    }
+
+    /** The camera's picture as it records, for a TextureView to show; null when this phone cannot. */
+    SurfaceTexture liveTexture() { return recording && cam != null && stShowable ? st : null; }
+
+    /** Whether the picture is upside down for the way the phone is mounted (and the view must turn it). */
+    boolean flipped() { return orientationHint() == 180; }
 
     private int orientationHint() {
         Camera.CameraInfo ci = new Camera.CameraInfo();

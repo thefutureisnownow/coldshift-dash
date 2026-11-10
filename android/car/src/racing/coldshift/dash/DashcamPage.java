@@ -64,12 +64,56 @@ class DashcamPage extends Page implements SensorEventListener {
     }
 
     @Override void onShow() {
+        shown = true;
         refreshData();
         if (tab == TAB_PREVIEW) startPreview();
         if (tab == TAB_CAMERA) dash.loadCameraOptions();
     }
 
-    @Override void onHide() { stopPreview(); }
+    @Override void onHide() { stopPreview(); shown = false; syncLive(); }
+
+    // ---- the live view while recording ----
+
+    // While it records, the camera gives the app no frames to draw (startPreview's way), but it still draws
+    // its preview into a texture (Dashcam.liveTexture). A TextureView over the Preview tab's picture shows
+    // that: put there while the tab shows and it records, taken away otherwise. The texture is the
+    // dashcam's and outlives the view.
+    private android.view.TextureView live;
+    private boolean shown;
+
+    private void syncLive() {
+        android.graphics.SurfaceTexture t = shown && tab == TAB_PREVIEW && !act.ui().blank() ? dash.liveTexture() : null;
+        if (t == null) {
+            if (live != null) { act.root().removeView(live); live = null; }
+            return;
+        }
+        UI ui = act.ui();
+        float k = Screen.k(ui);
+        int l = Math.round(Screen.ox(ui) + 566 * k), tp = Math.round(Screen.oy(ui) + 146 * k);
+        int w = Math.round(688 * k), hgt = Math.round(387 * k);
+        if (live != null && live.getSurfaceTexture() == t) return;
+        if (live != null) act.root().removeView(live);
+        try {
+            live = new android.view.TextureView(act);
+            live.setSurfaceTextureListener(new android.view.TextureView.SurfaceTextureListener() {
+                public void onSurfaceTextureAvailable(android.graphics.SurfaceTexture s, int a, int b) {}
+                public void onSurfaceTextureSizeChanged(android.graphics.SurfaceTexture s, int a, int b) {}
+                public boolean onSurfaceTextureDestroyed(android.graphics.SurfaceTexture s) { return false; }   // the dashcam keeps it
+                public void onSurfaceTextureUpdated(android.graphics.SurfaceTexture s) {}
+            });
+            live.setSurfaceTexture(t);
+            if (dash.flipped()) live.setRotation(180);
+            android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(w, hgt,
+                android.view.Gravity.TOP | android.view.Gravity.LEFT);
+            lp.leftMargin = l;
+            lp.topMargin = tp;
+            act.root().addView(live, 1, lp);                   // over the page, under messages, players and keyboards
+        } catch (Throwable e) {
+            android.util.Log.w("DashcamPage", "no live view", e);
+            if (live != null) act.root().removeView(live);
+            live = null;
+        }
+    }
 
     private void setTab(int i) {
         if (i == tab) return;
@@ -79,6 +123,7 @@ class DashcamPage extends Page implements SensorEventListener {
         armed = null;
         if (tab == TAB_PREVIEW) startPreview();
         if (tab == TAB_CAMERA) dash.loadCameraOptions();
+        syncLive();
     }
 
     private Bitmap still;
@@ -165,6 +210,7 @@ class DashcamPage extends Page implements SensorEventListener {
         if (++refreshTicks % 2 == 0 || refreshTicks == 1) refreshData();
         if (armed != null && SystemClock.elapsedRealtime() - armedAt > 3000) armed = null;
         if (tab == TAB_PREVIEW && dash.recording) maybeLoadStill();
+        syncLive();
     }
 
     private void refreshData() {
