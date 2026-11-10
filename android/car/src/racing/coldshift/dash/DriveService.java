@@ -15,6 +15,9 @@ import android.os.IBinder;
  */
 public class DriveService extends Service {
     private static boolean on;
+    // asked to start and not yet in the foreground: Android kills the app if a service started that way is
+    // stopped before it gets there, so a stop in that moment waits and the service ends itself (onStartCommand)
+    private static boolean starting;
 
     /** Called by Gps when its first listener comes and its last goes. */
     static synchronized void update(Context c, boolean want) {
@@ -22,9 +25,12 @@ public class DriveService extends Service {
         Intent i = new Intent(c, DriveService.class);
         if (!want) {
             on = false;
-            c.stopService(i);
+            if (!starting) c.stopService(i);
         } else if (Api.granted(c, android.Manifest.permission.ACCESS_FINE_LOCATION)) {
+            if (starting) { on = true; return; }           // still on its way up from before: it stays
+            starting = true;
             on = Api.startForeground(c, i);
+            if (!on) starting = false;
         }
     }
 
@@ -36,7 +42,12 @@ public class DriveService extends Service {
             .setContentIntent(Api.openApp(this))
             .setOngoing(true)
             .build();
-        if (!Api.foreground(this, 9, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)) on = false;
+        boolean up = Api.foreground(this, 9, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+        synchronized (DriveService.class) {
+            starting = false;
+            if (!up) on = false;
+            if (!on) stopSelf();                           // no longer wanted by the time it came up
+        }
         return START_NOT_STICKY;
     }
 
