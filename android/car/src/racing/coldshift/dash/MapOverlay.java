@@ -46,7 +46,7 @@ final class MapOverlay extends View {
     private static final RectF CARD_SAVE = Wide.centre(new RectF(478, 540, 628, 592));
     private static final RectF CARD_HOME = Wide.centre(new RectF(640, 540, 802, 592));
     private static final RectF CARD_WORK = Wide.centre(new RectF(814, 540, 964, 592));
-    private static final RectF CARD_CLOSE = Wide.centre(new RectF(928, 470, 972, 514));
+    private static final RectF CARD_CLOSE = Wide.centre(new RectF(914, 468, 974, 528));
     // navigation
     private static final RectF BANNER = new RectF(28, 154, 600, 288);
     private static final RectF STRIP = Wide.centre(new RectF(310, 544, 970, 612));
@@ -111,7 +111,7 @@ final class MapOverlay extends View {
             zoomButton(c, ZOUT, false);
         }
         Theme.panel(c, SPEED.left, SPEED.top, SPEED.right, SPEED.bottom);
-        String s = speedKmh < 0 ? "--" : String.valueOf(Math.round(speedKmh));
+        String s = speedKmh < 0 || noFix ? "--" : String.valueOf(Math.round(speedKmh));   // no stale speed
         Theme.text(c, s, SPEED.left + 28, SPEED.top + 48, 40, 0xffffffff, Theme.bold, Theme.LEFT);
         Theme.text(c, "km/h", SPEED.right - 20, SPEED.top + 48, 18, Theme.SUB, Theme.sans, Theme.RIGHT);
         if (nav != null) {
@@ -130,7 +130,7 @@ final class MapOverlay extends View {
             }
             if (Talk.get(getContext()).recording()) postInvalidateDelayed(250);     // the clock
         }
-        String say = !note.isEmpty() ? note : noFix && hasMap && pending == null ? "Waiting for GPS: the map shows where you last were" : "";
+        String say = !note.isEmpty() ? note : noFix && hasMap && pending == null && pickTitle == null ? "Waiting for GPS: the map shows where you last were" : "";
         if (!say.isEmpty()) {
             float y = nav != null || pending != null || pickTitle != null ? 446 : 606;
             float w = Theme.width(say, 18, Theme.bold) + 36;
@@ -287,7 +287,7 @@ final class MapOverlay extends View {
         Theme.panel(c, r.left, r.top, r.right, r.bottom);
         Theme.text(c, Theme.fit(pickTitle, r.width() - 90, 20, Theme.bold), r.left + 18, r.top + 34, 20, Theme.TEXT,
             Theme.bold, Theme.LEFT);
-        Theme.text(c, Theme.fit(pickSub, r.width() - 36, 18, Theme.sans), r.left + 18, r.top + 60, 18, Theme.SUB,
+        Theme.text(c, Theme.fit(pickSub, r.width() - 100, 18, Theme.sans), r.left + 18, r.top + 60, 18, Theme.SUB,
             Theme.sans, Theme.LEFT);
         Theme.button(c, CARD_GO, true, 10);
         Theme.text(c, "Go", CARD_GO.centerX(), CARD_GO.centerY() + 7, 20, 0xffffffff, Theme.bold, Theme.CENTER);
@@ -298,7 +298,8 @@ final class MapOverlay extends View {
         Theme.text(c, "Set as Home", CARD_HOME.centerX(), CARD_HOME.centerY() + 6, 18, Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, CARD_WORK, false, 10);
         Theme.text(c, "Set as Work", CARD_WORK.centerX(), CARD_WORK.centerY() + 6, 18, Theme.TEXT, Theme.sans, Theme.CENTER);
-        Theme.text(c, "×", CARD_CLOSE.centerX(), CARD_CLOSE.centerY() + 10, 30, Theme.SUB, Theme.sans, Theme.CENTER);
+        Theme.button(c, CARD_CLOSE, false, 10);
+        Theme.text(c, "×", CARD_CLOSE.centerX(), CARD_CLOSE.centerY() + 11, 32, Theme.TEXT, Theme.sans, Theme.CENTER);
     }
 
     // ---- controls ----

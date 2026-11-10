@@ -270,7 +270,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             // found nearby, not scanned: a QR code's address may not be one the others can reach
             Theme.text(c, convoy.hosting() ? "No internet needed: the others join this phone's Wi-Fi or hotspot." : "On a host nearby.", 34, 172, 18,
                 Theme.SUB, Theme.sans, Theme.LEFT);
-            Theme.text(c, Theme.fit("Others: Convoy, Convoys nearby" + (convoy.locked() ? " · password: " + convoy.password() : ""),
+            Theme.text(c, Theme.fit("The others open Convoy, then Convoys nearby" + (convoy.locked() ? " · password: " + convoy.password() : ""),
                 500, 18, Theme.sans), 34, 196, 18, convoy.locked() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
         } else if (qr != null && !out) {
             c.drawBitmap(qr, null, QR, null);
@@ -543,15 +543,15 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             boolean mine = convoy.fromMe(m), reply = convoy.toMe(m);
             String meta;
             if (m.isPrivate()) {          // "Malva Pudding → you · private · 12:03"
-                meta = Theme.fit(mine ? "You" : m.name, colW / 4, 14 * s, Theme.bold) + " → "
-                    + Theme.fit(mine ? convoy.toName(m) : "you", colW / 4, 14 * s, Theme.bold) + " · private · " + hm.format(new Date(m.time));
+                meta = Theme.fit(mine ? "You" : m.name, colW / 4, 16 * s, Theme.bold) + " → "
+                    + Theme.fit(mine ? convoy.toName(m) : "you", colW / 4, 16 * s, Theme.bold) + " · private · " + hm.format(new Date(m.time));
             } else {
-                meta = Theme.fit(mine ? "You" : m.name, colW / 2, 14 * s, Theme.bold) + " · " + hm.format(new Date(m.time));
+                meta = Theme.fit(mine ? "You" : m.name, colW / 2, 16 * s, Theme.bold) + " · " + hm.format(new Date(m.time));
             }
             if (m.pending) meta += s > 1 ? " · not sent yet" : " · not sent yet: it goes when the connection is back";
             else if (m.late > 0) meta += " · " + late(m.late);
-            float chipW = reply ? Theme.width("Reply", 14 * s, Theme.bold) + 20 * s : 0;   // Reply, at the meta line's right
-            Theme.text(c, Theme.fit(meta, colW - (reply ? chipW + 12 * s : 0), 14 * s, Theme.bold), 598, top + 14 * s, 14 * s,
+            float chipW = reply ? Theme.width("Reply", 16 * s, Theme.bold) + 20 * s : 0;   // Reply, at the meta line's right
+            Theme.text(c, Theme.fit(meta, colW - (reply ? chipW + 12 * s : 0), 16 * s, Theme.bold), 598, top + 15 * s, 16 * s,
                 m.pending ? Theme.GOLD : m.isPrivate() ? PRIVATE : mine ? Theme.BLUE_HI : Theme.SUB, Theme.bold, Theme.LEFT);
             if (m.isPrivate()) {                                // a bar down its left edge
                 Theme.P.setShader(null);
@@ -567,7 +567,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
                 Theme.P.setColor(PRIVATE);
                 c.drawRoundRect(chip, 8 * s, 8 * s, Theme.P);
                 Theme.P.setStyle(android.graphics.Paint.Style.FILL);
-                Theme.text(c, "Reply", chip.centerX(), top + 14 * s, 14 * s, PRIVATE, Theme.bold, Theme.CENTER);
+                Theme.text(c, "Reply", chip.centerX(), top + 15 * s, 16 * s, PRIVATE, Theme.bold, Theme.CENTER);
                 // a voice note keeps tap-to-play, so only the meta line replies; a text message replies anywhere on it
                 replyAt.add(m.isVoice() ? new RectF(chip.left - 14 * s, top - 8 * s, chip.right + 10, top + 26 * s)
                     : new RectF(586, top - 4 * s, chip.right + 10, y));
