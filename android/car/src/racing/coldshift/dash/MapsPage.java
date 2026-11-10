@@ -18,7 +18,30 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
     private Location last;
     private long lastFixAt;
     private boolean listening;          // the GPS status listener (the fixes come from Gps)
-    private final List<GpsSatellite> sats = new ArrayList<GpsSatellite>();
+    private final List<Sat> sats = new ArrayList<Sat>();
+    private Object sky;                 // the GnssSky listening, on Android 7 and up
+
+    /** A satellite in view, from whichever of Android's two ways of telling this phone has. */
+    static final class Sat {
+        int prn;
+        float elev, az, snr;
+        boolean used;
+    }
+
+    private void setSats(List<Sat> now) {
+        sats.clear();
+        heard = used = inView = 0;
+        for (Sat s : now) {
+            sats.add(s);
+            if (s.snr > 0) heard++;                              // in the almanac is not the same as heard
+            if (s.used) used++;
+            if (s.elev > 0 || s.az > 0) inView++;
+        }
+        // strongest first: the bars show the sixteen that matter, and the sky draws the weak ones underneath
+        java.util.Collections.sort(sats, new java.util.Comparator<Sat>() {
+            public int compare(Sat a, Sat b) { return a.used != b.used ? (a.used ? -1 : 1) : Float.compare(b.snr, a.snr); }
+        });
+    }
     private int heard, used, inView;
     private int ttff;
     private int mode;                 // 0 map, 1 GPS status
@@ -55,7 +78,20 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         act.maps().show(mode == 0, this);
         refreshOverlay();
         Gps.get(act).add(this);
+        onShowStatus();
+    }
+
+    /** Starts listening for the satellites in view, once. */
+    private void onShowStatus() {
         if (listening) return;
+        if (Api.SDK >= 24) {                               // the older calls are refused on a current Android
+            sky = GnssSky.start(lm, new GnssSky.Sink() {
+                public void sky(List<Sat> now) { setSats(now); }
+                public void firstFix(int ms) { ttff = ms; }
+            });
+            listening = sky != null;
+            return;
+        }
         try {
             lm.addGpsStatusListener(this);
             listening = true;
@@ -67,7 +103,8 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         act.maps().hide();
         Gps.get(act).remove(this);
         if (!listening) return;
-        lm.removeGpsStatusListener(this);
+        if (sky != null) { ((GnssSky) sky).stop(lm); sky = null; }
+        else lm.removeGpsStatusListener(this);
         listening = false;
     }
 
@@ -79,17 +116,22 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         }
         else if (mode == 0 && (destName != null || act.maps().overlay() != null && act.maps().overlay().noFix != noFix()))
             refreshOverlay();                                           // the arrival clock, and whether GPS is there
+        if (!listening) onShowStatus();                    // refused before the permission was given: try again
+        if (Api.SDK >= 24) return;                         // GnssSky tells the page as the sky changes
         try {
             status = lm.getGpsStatus(status);
         } catch (Throwable t) { return; }
-        sats.clear();
-        heard = used = inView = 0;
-        for (GpsSatellite s : status.getSatellites()) {
-            sats.add(s);
-            heard++;
-            if (s.usedInFix()) used++;
-            if (s.getElevation() > 0 || s.getAzimuth() > 0) inView++;
+        List<Sat> now = new ArrayList<Sat>();
+        for (GpsSatellite g : status.getSatellites()) {
+            Sat s = new Sat();
+            s.prn = g.getPrn();
+            s.elev = g.getElevation();
+            s.az = g.getAzimuth();
+            s.snr = g.getSnr();
+            s.used = g.usedInFix();
+            now.add(s);
         }
+        setSats(now);
         ttff = status.getTimeToFirstFix();
     }
 
@@ -512,21 +554,31 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         if (sats.isEmpty()) {
             Theme.text(c, "No satellites in view yet", CX, CY + 5, 18, Theme.SUB, Theme.bold, Theme.CENTER);
         }
-        for (GpsSatellite s : sats) {
-            if (s.getElevation() <= 0 && s.getAzimuth() <= 0) continue;
-            double az = Math.toRadians(s.getAzimuth());
-            float r = R * (90f - s.getElevation()) / 90f;
+        for (int i = sats.size() - 1; i >= 0; i--) {             // the strongest last, on top
+            Sat s = sats.get(i);
+            if (s.elev <= 0 && s.az <= 0) continue;
+            double az = Math.toRadians(s.az);
+            float r = R * (90f - s.elev) / 90f;
             float x = CX + (float) Math.sin(az) * r, y = CY - (float) Math.cos(az) * r;
-            int col = snrColor(s.getSnr());
-            p.setStyle(s.usedInFix() ? Paint.Style.FILL : Paint.Style.STROKE);
+            if (s.snr <= 0) {                                    // up there but not heard: a faint dot, no number
+                p.setStyle(Paint.Style.FILL);
+                p.setColor(Theme.accent(0x80));
+                c.drawCircle(x, y, 4, p);
+                continue;
+            }
+            int col = snrColor(s.snr);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(s.used ? col : 0xf0050912);
+            c.drawCircle(x, y, 13, p);
+            p.setStyle(Paint.Style.STROKE);
             p.setStrokeWidth(2.4f);
             p.setColor(col);
-            c.drawCircle(x, y, 10, p);
+            c.drawCircle(x, y, 13, p);
             p.setStyle(Paint.Style.FILL);
-            Theme.text(c, String.valueOf(s.getPrn()), x, y + 4, 18, s.usedInFix() ? 0xff05070d : 0xffffffff,
+            Theme.text(c, String.valueOf(s.prn), x, y + 5, 14, s.used ? 0xff05070d : 0xffffffff,
                 Theme.bold, Theme.CENTER);
         }
-        Theme.text(c, "Solid: used in the fix. Green is 30 dB-Hz and up.", 31, 604, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Solid: used in the fix. Green: 30 dB-Hz and up.", 31, 604, 18, Theme.SUB, Theme.sans, Theme.LEFT);
     }
 
     private String compass(float deg) {
@@ -547,18 +599,18 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
 
         String pos = "-", spd = "-", hdg = "-", alt = "-", acc = "-", upd = "-";
         if (last != null) {
-            pos = String.format("%.5f, %.5f", last.getLatitude(), last.getLongitude());
-            spd = String.format("%.0f km/h", last.getSpeed() * 3.6f);
-            hdg = last.hasBearing() ? String.format("%.0f\u00b0 %s", last.getBearing(), compass(last.getBearing())) : "-";
-            alt = last.hasAltitude() ? String.format("%.0f m", last.getAltitude()) : "-";
-            acc = last.hasAccuracy() ? String.format("\u00b1%.0f m", last.getAccuracy()) : "-";
+            pos = String.format(java.util.Locale.US, "%.5f, %.5f", last.getLatitude(), last.getLongitude());
+            spd = String.format(java.util.Locale.US, "%.0f km/h", last.getSpeed() * 3.6f);
+            hdg = last.hasBearing() ? String.format(java.util.Locale.US, "%.0f\u00b0 %s", last.getBearing(), compass(last.getBearing())) : "-";
+            alt = last.hasAltitude() ? String.format(java.util.Locale.US, "%.0f m", last.getAltitude()) : "-";
+            acc = last.hasAccuracy() ? String.format(java.util.Locale.US, "\u00b1%.0f m", last.getAccuracy()) : "-";
             upd = (System.currentTimeMillis() - lastFixAt) / 1000 + " s ago";
         }
         String[][] cells = {
             {"Position", pos}, {"Speed", spd}, {"Heading", hdg}, {"Altitude", alt},
             {"Satellites", used + " used \u00b7 " + heard + " heard \u00b7 " + inView + " in view"},
             {"Accuracy", acc},
-            {"Time to first fix", ttff > 0 ? String.format("%.1f s", ttff / 1000f) : "-"},
+            {"Time to first fix", ttff > 0 ? String.format(java.util.Locale.US, "%.1f s", ttff / 1000f) : "-"},
             {"Last update", upd}};
         for (int i = 0; i < cells.length; i++) {
             float x = 499 + (i % 2) * (387 + Wide.d() / 2), y = 168 + (i / 2) * 54;
@@ -584,13 +636,13 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         int n = Math.min(sats.size(), 16);
         float bw = Math.min(36f, (700f + Wide.d()) / n - 6);
         for (int i = 0; i < n; i++) {
-            GpsSatellite s = sats.get(i);
+            Sat s = sats.get(i);
             float x = 540 + i * (bw + 8);
-            float top = 585 - Math.max(0, s.getSnr()) * 3.6f;
+            float top = 585 - Math.max(0, s.snr) * 3.6f;
             RectF r = new RectF(x, top, x + bw, 585);
-            p.setColor(s.usedInFix() ? snrColor(s.getSnr()) : (snrColor(s.getSnr()) & 0x00ffffff) | 0x77000000);
+            p.setColor(s.used ? snrColor(s.snr) : (snrColor(s.snr) & 0x00ffffff) | 0x77000000);
             c.drawRoundRect(r, 3, 3, p);
-            Theme.text(c, String.valueOf(s.getPrn()), x + bw / 2, 603, 18, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, String.valueOf(s.prn), x + bw / 2, 603, 14, Theme.SUB, Theme.sans, Theme.CENTER);
         }
     }
 }
