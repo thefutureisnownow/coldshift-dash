@@ -9,6 +9,32 @@ import android.graphics.RectF;
 final class Icons {
     private Icons() {}
 
+    // ---- the pictures (assets/icons, cut from generated sheets by tools/cut_icons.py): white with the
+    // glyph as alpha, drawn in whatever colour is asked for ----
+
+    private static final java.util.Map<String, android.graphics.Bitmap> PICS = new java.util.HashMap<String, android.graphics.Bitmap>();
+    private static final Paint TINT = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private static final android.graphics.RectF BOX = new android.graphics.RectF();
+
+    /** Draws the icon `name` centred on (cx, cy), `size` across, in `col`. Returns false when there is none. */
+    static boolean draw(Canvas c, android.content.Context ctx, String name, float cx, float cy, float size, int col) {
+        if (name == null) return false;
+        android.graphics.Bitmap b = PICS.get(name);
+        if (b == null && !PICS.containsKey(name)) {
+            try {
+                java.io.InputStream in = ctx.getAssets().open("icons/" + name + ".png");
+                b = android.graphics.BitmapFactory.decodeStream(in);
+                in.close();
+            } catch (Exception e) { /* no such picture */ }
+            PICS.put(name, b);
+        }
+        if (b == null) return false;
+        TINT.setColorFilter(new android.graphics.PorterDuffColorFilter(col, android.graphics.PorterDuff.Mode.SRC_IN));
+        BOX.set(cx - size / 2, cy - size / 2, cx + size / 2, cy + size / 2);
+        c.drawBitmap(b, null, BOX, TINT);
+        return true;
+    }
+
     private static void fill(Canvas c, Path p, int col) {
         Theme.P.setShader(null);
         Theme.P.setStyle(Paint.Style.FILL);

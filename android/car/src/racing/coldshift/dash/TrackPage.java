@@ -48,6 +48,7 @@ class TrackPage extends Page implements Gps.Listener {
     }
 
     String label() { return "Track"; }
+    @Override String icon() { return "track"; }
 
     @Override boolean wide() { return true; }
 

@@ -84,6 +84,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
     public void talkChanged() { if (shown()) act.ui().postInvalidate(); }
 
     String label() { return "Convoy"; }
+    @Override String icon() { return "convoy"; }
 
     @Override boolean wide() { return true; }
 

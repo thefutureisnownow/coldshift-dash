@@ -47,6 +47,7 @@ class SettingsPage extends Page {
     SettingsPage(Main a, UI ui) { super(a); this.ui = ui; sound = new SoundSettings(a); }
 
     String label() { return "Settings"; }
+    @Override String icon() { return "settings"; }
 
     @Override boolean wide() { return true; }
 

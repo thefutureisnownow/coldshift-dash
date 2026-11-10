@@ -56,6 +56,7 @@ class DashcamPage extends Page implements SensorEventListener {
     }
 
     String label() { return "Dashcam"; }
+    @Override String icon() { return "dashcam"; }
 
     @Override int intervalMs() {
         if (tab == TAB_PREVIEW) return 110;

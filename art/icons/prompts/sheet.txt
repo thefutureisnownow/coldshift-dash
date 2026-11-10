@@ -1,0 +1,10 @@
+Use case: ui-icon-sheet. One sheet of twelve user-interface icons for a car dashboard app, to be cut apart and tinted in software.
+
+Layout: a strict grid of 4 columns and 3 rows on a square canvas. Each cell holds exactly one icon, centred, filling about 70% of the cell, with clear empty space between neighbours. No grid lines, no borders, no frames, no labels, no letters, no numbers, no text anywhere.
+
+Style: flat solid pure white glyphs on a pure black background. Bold, simple, rounded shapes with thick strokes of one even weight, like the icons on a car's infotainment screen: readable at a glance when drawn 40 pixels tall. No colour, no grey, no gradients, no shading, no shadows, no glow, no 3D, no texture. All twelve in the same style and stroke weight.
+
+The icons, in reading order:
+Row 1: (1) a steering wheel seen from the front; (2) a folded paper map with a location pin on it; (3) two beamed musical notes; (4) a dashcam: a small video camera body with a round lens, hanging from a short mount at the top.
+Row 2: (5) four rounded squares in a 2 by 2 arrangement (a "more" menu); (6) a chequered racing flag on a pole; (7) a round gauge dial with a needle; (8) an open book with a bookmark ribbon.
+Row 3: (9) three cars seen from above driving in a line one behind the other; (10) a gear cog with a round hole (settings); (11) a simple house (home); (12) a fuel pump.

@@ -72,6 +72,7 @@ class LogPage extends Page implements Logbook.Listener {
     }
 
     String label() { return "Log book"; }
+    @Override String icon() { return "log"; }
 
     @Override boolean wide() { return true; }
 

@@ -44,6 +44,7 @@ class MediaPage extends Page {
     }
 
     String label() { return "Media"; }
+    @Override String icon() { return "media"; }
 
     @Override int intervalMs() {
         if (Math.abs(fling) > 0.5f || dragList) return 33;

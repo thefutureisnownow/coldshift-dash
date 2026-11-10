@@ -73,6 +73,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
     }
 
     String label() { return "Maps"; }
+    @Override String icon() { return "maps"; }
 
     @Override void onShow() {
         shown = true;

@@ -37,6 +37,7 @@ class DrivePage extends Page implements Gps.Listener {
     }
 
     String label() { return "Drive"; }
+    @Override String icon() { return "drive"; }
 
     @Override boolean wide() { return true; }
     @Override int intervalMs() { return 500; }
@@ -122,7 +123,11 @@ class DrivePage extends Page implements Gps.Listener {
             Theme.text(c, "No destination", L + 24, NAV_T + 70, 30, 0xffffffff, Theme.bold, Theme.LEFT);
             button(c, GOTO, "Go to…", true, 0xffffffff);
             boolean home = Places.get(act).find(Places.HOME) != null;
-            button(c, HOME, "Home", false, home ? Theme.TEXT : Theme.DIMMER);
+            int ink = home ? Theme.TEXT : Theme.DIMMER;
+            Theme.button(c, HOME, false, 16);
+            float lw = Theme.width("Home", 26, Theme.bold), x = HOME.centerX() - (lw + 52) / 2;
+            Icons.draw(c, act, "home", x + 20, HOME.centerY(), 40, ink);
+            Theme.text(c, "Home", x + 52, HOME.centerY() + 9, 26, ink, Theme.bold, Theme.LEFT);
         }
     }
 

@@ -7,6 +7,8 @@ abstract class Page {
     final Main act;
     Page(Main a) { act = a; }
     abstract String label();
+    /** The page's picture on the tab bar and the More page (assets/icons/<name>.png); null for none. */
+    String icon() { return null; }
     /** Darkness of the photo behind the page, 0 = clear, 1 = black. */
     float overlay() { return 0.66f; }
     void onShow() {}

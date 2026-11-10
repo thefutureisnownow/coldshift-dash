@@ -1,0 +1,53 @@
+{
+  "created": "2026-11-10T16:18:01+00:00",
+  "api": "https://openrouter.ai/api/v1/images",
+  "model": "openai/gpt-image-2.5-flare",
+  "parameters": {
+    "aspect_ratio": "1:1",
+    "quality": "low",
+    "n": 1,
+    "background": "opaque"
+  },
+  "prompt": "Use case: ui-icon-sheet. Four alternative icons meaning \"convoy: cars driving together\", in exactly the style of the reference sheet: flat solid pure white glyphs on a pure black background, bold rounded shapes, the same heavy weight as the reference's house and gear, readable when drawn 40 pixels tall. No outlines-only drawing, no thin lines, no colour, no grey, no shading, no text, no numbers, no grid lines or frames.\n\nLayout: a strict 2 by 2 grid on a square canvas, one icon per cell, centred, filling about 70% of its cell.\n\n(1) top left: two solid cars seen from the side, one behind the other, the rear one slightly smaller. (2) top right: three solid cars seen from the front, arranged as a tight triangle, one in front and two behind. (3) bottom left: two solid cars seen from above, staggered diagonally, both pointing up. (4) bottom right: one solid car seen from the side with a solid speech bubble above it.",
+  "references": [
+    {
+      "path": "art/icons/sheet-1.png",
+      "sha256": "1c81e23af6623324a2ed86c1f6bf8135d878181a12432517edb66dc0038dc9d8"
+    }
+  ],
+  "resize": null,
+  "outputs": [
+    {
+      "path": "art/icons/convoy-1.png",
+      "generated_size": [
+        1024,
+        1024
+      ],
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "ed8bf3e7f92a3a07841a81df1d0a49edebffbfe1120f32701425fb0a58af773d"
+    }
+  ],
+  "seconds": 13.0,
+  "usage": {
+    "prompt_tokens": 1260,
+    "completion_tokens": 196,
+    "total_tokens": 1456,
+    "cost": 0.015252,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.015252,
+      "upstream_inference_prompt_cost": 0.009372,
+      "upstream_inference_completions_cost": 0.00588
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 196
+    }
+  }
+}

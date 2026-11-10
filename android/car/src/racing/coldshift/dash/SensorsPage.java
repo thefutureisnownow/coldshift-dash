@@ -35,6 +35,7 @@ class SensorsPage extends Page {
     }
 
     String label() { return "Sensors"; }
+    @Override String icon() { return "sensors"; }
 
     @Override boolean wide() { return true; }
 

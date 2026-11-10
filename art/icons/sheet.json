@@ -1,0 +1,48 @@
+{
+  "created": "2026-11-10T16:17:37+00:00",
+  "api": "https://openrouter.ai/api/v1/images",
+  "model": "openai/gpt-image-2.5-flare",
+  "parameters": {
+    "aspect_ratio": "1:1",
+    "quality": "low",
+    "n": 1,
+    "background": "opaque"
+  },
+  "prompt": "Use case: ui-icon-sheet. One sheet of twelve user-interface icons for a car dashboard app, to be cut apart and tinted in software.\n\nLayout: a strict grid of 4 columns and 3 rows on a square canvas. Each cell holds exactly one icon, centred, filling about 70% of the cell, with clear empty space between neighbours. No grid lines, no borders, no frames, no labels, no letters, no numbers, no text anywhere.\n\nStyle: flat solid pure white glyphs on a pure black background. Bold, simple, rounded shapes with thick strokes of one even weight, like the icons on a car's infotainment screen: readable at a glance when drawn 40 pixels tall. No colour, no grey, no gradients, no shading, no shadows, no glow, no 3D, no texture. All twelve in the same style and stroke weight.\n\nThe icons, in reading order:\nRow 1: (1) a steering wheel seen from the front; (2) a folded paper map with a location pin on it; (3) two beamed musical notes; (4) a dashcam: a small video camera body with a round lens, hanging from a short mount at the top.\nRow 2: (5) four rounded squares in a 2 by 2 arrangement (a \"more\" menu); (6) a chequered racing flag on a pole; (7) a round gauge dial with a needle; (8) an open book with a bookmark ribbon.\nRow 3: (9) three cars seen from above driving in a line one behind the other; (10) a gear cog with a round hole (settings); (11) a simple house (home); (12) a fuel pump.",
+  "references": [],
+  "resize": null,
+  "outputs": [
+    {
+      "path": "art/icons/sheet-1.png",
+      "generated_size": [
+        1024,
+        1024
+      ],
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "1c81e23af6623324a2ed86c1f6bf8135d878181a12432517edb66dc0038dc9d8"
+    }
+  ],
+  "seconds": 11.1,
+  "usage": {
+    "prompt_tokens": 368,
+    "completion_tokens": 196,
+    "total_tokens": 564,
+    "cost": 0.00772,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00772,
+      "upstream_inference_prompt_cost": 0.00184,
+      "upstream_inference_completions_cost": 0.00588
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 196
+    }
+  }
+}
