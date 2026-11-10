@@ -89,6 +89,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     private long nextAutoTry;
     private int curSeq;
     private boolean previewWanted, previewOnly, previewPending;
+    private boolean announce;           // the next clip is a recording's first: it gets the start sound
     private int pw, ph, pstep;
     private int[] ppix;
     private Bitmap[] pbm = new Bitmap[2];
@@ -279,7 +280,12 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         private final Dashcam d; private final Clip c;
         LockToggle(Dashcam d, Clip c) { this.d = d; this.c = c; }
         public void run() {
-            if (d.curFile != null && d.curFile.equals(c.file)) { d.lockPending = !d.lockPending; return; }
+            if (d.curFile != null && d.curFile.equals(c.file)) {
+                d.lockPending = !d.lockPending;
+                if (d.lockPending) Cues.play(d.ctx, Cues.LOCK);
+                return;
+            }
+            if (!c.locked) Cues.play(d.ctx, Cues.LOCK);
             d.rename(c.file, !c.locked);
         }
     }
@@ -548,6 +554,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         beginTrip();
         gyro.on();
         recording = true;
+        announce = true;
         status = "Starting\u2026";
         DashcamService.update(ctx, true);
         startSegment();
@@ -619,6 +626,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         segLenMs = test != null ? TEST_HOLD_MS : DashPrefs.segMs(ctx);
         clipName = curFile.getName();
         status = "Recording";
+        if (announce) { announce = false; Cues.play(ctx, Cues.REC_START); }    // once, not at each new clip
         if (test != null) {
             noteTestClip(clipName);
             status = "Test: " + test.current().label;
@@ -733,6 +741,13 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         if (why.startsWith("Storage") || why.startsWith("Recorder") || why.startsWith("Camera")
                 || why.startsWith("No storage")) blocked = true;
         if (!recording && rec == null && cam == null) { status = why; return; }
+        if (recording) {
+            // a stop nobody asked for is a warning, and says why; parking the car (power lost) is an ordinary end
+            if (why.startsWith("Storage") || why.startsWith("No storage")) Cues.warn(ctx, "rec_stopped_storage");
+            else if (why.startsWith("Recorder") || why.startsWith("Camera")) Cues.warn(ctx, "rec_stopped_error");
+            else if (why.startsWith("Battery")) Cues.warn(ctx, "rec_stopped_battery");
+            else Cues.play(ctx, Cues.REC_STOP);
+        }
         recording = false;
         finishSegment();
         endTest();
@@ -751,6 +766,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     private void doLock() {
         if (!recording) return;
         lockPending = true;
+        Cues.play(ctx, Cues.LOCK);
         List<Clip> list = clips();
         for (int i = list.size() - 1; i >= 0; i--) {
             Clip c = list.get(i);
@@ -1033,6 +1049,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         markStartReal = m.startReal;
         marking = true;
         markNote = "Marking";
+        Cues.play(ctx, Cues.MARK_ON);
         writeMarkJson(m, true);
     }
 
@@ -1053,6 +1070,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         mark = null;
         marking = false;
         markNote = "Mark " + m.id + " saved";
+        if (closeSpan) Cues.play(ctx, Cues.MARK_OFF);       // ended by hand: when the recording stops, its own sound says so
     }
 
     private void markPoint(Location l) {

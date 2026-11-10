@@ -130,6 +130,7 @@ public class Main extends Activity {
         drawUnderCutout();
         applyKiosk();
         Convoy.get(this).attach(this);
+        Cues.get(this);                                     // loads the sounds
         ui = new UI(this);
         root = new FrameLayout(this);
         root.setBackgroundColor(0xff000000);

@@ -1,0 +1,108 @@
+{
+  "sfx/rec_start": {
+    "take_sha256": "4ee382740bec903c8fce4a3013b4a766d87e465b9498f7e3eba6d2bd0d8a2ac1",
+    "files": [
+      {
+        "path": "art/sounds/sfx/rec_start.wav",
+        "seconds": 0.68,
+        "sha256": "dd74a862e7df84140cda26c1f824942fb182742ba6f19897073b95bec396f0da"
+      }
+    ]
+  },
+  "sfx/rec_stop": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "User interface sound for a modern car dashboard: two quick clean notes falling in pitch, a soft glassy digital chime, calm confirmation that something has stopped. Dry, close, no reverb tail, no voice, no music, no background noise",
+    "seconds_asked": 0.7,
+    "take": "art/sounds/takes/sfx-rec_stop.mp3",
+    "credits": 0,
+    "take_sha256": "4b3709b0451ef75ee93553a896f0ec5b453c7aa81147ad245820e722837f1506",
+    "files": [
+      {
+        "path": "art/sounds/sfx/rec_stop.wav",
+        "seconds": 0.68,
+        "sha256": "2122470dbcf85982fead641565efaae66d5809f28f5d66a2a8f7786296ba768f"
+      }
+    ]
+  },
+  "sfx/mark_on": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "User interface sound for a modern car dashboard: one single very short bright high-pitched digital blip, crisp and clean. Dry, no reverb, no voice, no music, no background noise",
+    "seconds_asked": 0.5,
+    "take": "art/sounds/takes/sfx-mark_on.mp3",
+    "credits": 0,
+    "take_sha256": "33ab787b2d7f6b579f629f27aad832ccef7e023f64af82ab17acc3247bcbfc4b",
+    "files": [
+      {
+        "path": "art/sounds/sfx/mark_on.wav",
+        "seconds": 0.48,
+        "sha256": "5d8320c997edd6d1ec8282e55efe4e331fabc57ff1a3ac2e152337ef89d599c3"
+      }
+    ]
+  },
+  "sfx/mark_off": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "User interface sound for a modern car dashboard: two identical very short bright high-pitched digital blips in quick succession, crisp and clean. Dry, no reverb, no voice, no music, no background noise",
+    "seconds_asked": 0.5,
+    "take": "art/sounds/takes/sfx-mark_off.mp3",
+    "credits": 0,
+    "take_sha256": "7cb51878956e8daa059e56d8ce551954e039bd3668b08b3d1ad98b1be968e6a4",
+    "files": [
+      {
+        "path": "art/sounds/sfx/mark_off.wav",
+        "seconds": 0.48,
+        "sha256": "b53f9fb5d1653d1dbbabc99deaa9db1c6ca8c77fa5f0c4a1386d7963241cba5c"
+      }
+    ]
+  },
+  "sfx/lock": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "User interface sound for a modern car dashboard: a short soft mechanical latch click followed at once by one small low digital tone, like something being locked safely. Dry, no reverb, no voice, no music, no background noise",
+    "seconds_asked": 0.5,
+    "take": "art/sounds/takes/sfx-lock.mp3",
+    "credits": 0,
+    "take_sha256": "6089e8a0cf4fd95cdbb321d05fb56c287d029f5d61666b0258350b6f803a175e",
+    "files": [
+      {
+        "path": "art/sounds/sfx/lock.wav",
+        "seconds": 0.388,
+        "sha256": "466cd74a6b1b2772bc51704a21e62aec6cf5e32b6d7ea834d3299a1cc7558c39"
+      }
+    ]
+  },
+  "sfx/warn": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "Warning chime for a modern car dashboard: three quick identical urgent beeps, a clear firm mid-high digital alert tone that demands attention without being harsh. Dry, no reverb, no voice, no music, no background noise",
+    "seconds_asked": 1.0,
+    "take": "art/sounds/takes/sfx-warn.mp3",
+    "credits": 0,
+    "take_sha256": "6c0b3553349249aed52296837bf37c1b0d9efa81846e146c65f05f77bbbc3470",
+    "files": [
+      {
+        "path": "art/sounds/sfx/warn.wav",
+        "seconds": 1.0,
+        "sha256": "a00b2ea555b194b8dd5d9ec5dcb198af48115ece21cd17455261daa42cfb72b9"
+      }
+    ]
+  },
+  "sfx/notice": {
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v2",
+    "prompt": "Gentle reminder sound for a modern car dashboard: one single soft warm bell-like digital ding with a short natural decay, like a polite seat belt reminder. No voice, no music, no background noise",
+    "seconds_asked": 0.9,
+    "take": "art/sounds/takes/sfx-notice.mp3",
+    "credits": 0,
+    "take_sha256": "5454a312293d21fac8817f03432f9d6a491cc045d5e9e3b73a3efbc05e4b21f7",
+    "files": [
+      {
+        "path": "art/sounds/sfx/notice.wav",
+        "seconds": 0.88,
+        "sha256": "f52cff39d80a6349907b208726547d76161428070dd825ca9fe49bfca28f1691"
+      }
+    ]
+  }
+}

@@ -116,7 +116,15 @@ class SettingsPage extends Page {
         section(c, BUZZ_Y, "Vibrate on tap", 0, "");
         chip(c, BUZZ_ON, "On", buzz);
         chip(c, BUZZ_OFF, "Off", !buzz);
+
+        boolean snd = Prefs.sounds(act);
+        Theme.text(c, "Sounds", SND_ON.left, BUZZ_Y, 20, Theme.SUB, Theme.sans, Theme.LEFT);
+        chip(c, SND_ON, "On", snd);
+        chip(c, SND_OFF, "Off", !snd);
+        Theme.text(c, "Recording, marks and warnings", SND_OFF.right + 20, SND_OFF.centerY() + 6, 16, Theme.DIM, Theme.sans, Theme.LEFT);
     }
+
+    private static final RectF SND_ON = at(LEFT + 320, 460, 110), SND_OFF = at(LEFT + 440, 460, 110);
 
     private static final float SLIDER_Y = Y1 + 46, IDLE_Y = 296, BUZZ_Y = 460;
     private static final RectF BUZZ_ON = at(LEFT, BUZZ_Y, 110), BUZZ_OFF = at(LEFT + 120, BUZZ_Y, 110);
@@ -704,6 +712,10 @@ class SettingsPage extends Page {
                     Prefs.setHaptics(act, true);
                     Haptics.sample(act);                              // what it feels like
                 } else if (BUZZ_OFF.contains(x, y)) Prefs.setHaptics(act, false);
+                if (SND_ON.contains(x, y) && !Prefs.sounds(act)) {
+                    Prefs.setSounds(act, true);
+                    Cues.play(act, Cues.REC_START);                   // what they sound like
+                } else if (SND_OFF.contains(x, y)) Prefs.setSounds(act, false);
             } else if (lastTab == CONVOY) {
                 if (WAKE.contains(x, y)) Prefs.setConvoyWake(act, true);
                 else if (CHIME.contains(x, y)) Prefs.setConvoyWake(act, false);

@@ -183,10 +183,44 @@ public class UI extends View implements Runnable {
         int mins = Prefs.idleMinutes(act);
         if (mins > 0 && !blank && idleSeconds() >= mins * 60L && System.currentTimeMillis() >= awakeUntil) setBlank(true);
         pages[cur].tick();
+        alerts();
         MapsPage maps = mapsPage();
         if (pages[cur] != maps && maps.navigating()) maps.navTick();    // a journey goes on behind any page
         invalidate();
         handler.postDelayed(this, pages[cur].intervalMs());
+    }
+
+    // ---- warnings by ear (Cues): the chime, then what it is about in the navigation voice ----
+
+    private static final float ENGINE_HOT = 110;            // coolant, C
+    private boolean milWas, fuelWas, phoneHotWas, primed;
+    private long milSaidAt, engineHotSaidAt, phoneHotSaidAt;
+
+    private void alerts() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        Obd o = Obd.get(act);
+        boolean mil = o.connected() && o.milOn();
+        // the light coming on; not again within half an hour (an adapter that drops and reconnects)
+        if (mil && !milWas && (milSaidAt == 0 || now - milSaidAt > 30 * 60000L)) {
+            milSaidAt = now;
+            Cues.warn(act, "check_engine");
+        }
+        milWas = mil;
+        float coolant = o.connected() ? o.value(Obd.COOLANT) : Float.NaN;
+        if (!Float.isNaN(coolant) && coolant >= ENGINE_HOT && (engineHotSaidAt == 0 || now - engineHotSaidAt > 60000)) {
+            engineHotSaidAt = now;                          // every minute while it stays hot
+            Cues.warn(act, "engine_hot");
+        }
+        boolean hot = !Float.isNaN(batteryTemp) && batteryTemp >= Thermal.HOT;
+        if (hot && (!phoneHotWas || now - phoneHotSaidAt > 10 * 60000L)) {
+            phoneHotSaidAt = now;
+            Cues.warn(act, "phone_hot");
+        }
+        phoneHotWas = hot;
+        boolean fuel = Logbook.get(act).pending() != null;
+        if (fuel && !fuelWas && primed) Cues.notice(act, "fuel_stop");    // a new stop, not one left from before the app opened
+        fuelWas = fuel;
+        primed = true;
     }
 
     private void setBlank(boolean b) {

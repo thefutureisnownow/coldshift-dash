@@ -1,0 +1,31 @@
+{
+ "_comment": "The app's cue sounds: each cue's ElevenLabs prompt and length in seconds. One family: clean, dry, soft-edged digital chimes like a modern car's infotainment system, short enough not to talk over a spoken turn. tools/generate_audio.py makes them.",
+ "rec_start": {
+  "prompt": "User interface sound for a modern car dashboard: two quick clean notes rising in pitch, a soft glassy digital chime, friendly confirmation that something has started. Dry, close, no reverb tail, no voice, no music, no background noise",
+  "seconds": 0.7
+ },
+ "rec_stop": {
+  "prompt": "User interface sound for a modern car dashboard: two quick clean notes falling in pitch, a soft glassy digital chime, calm confirmation that something has stopped. Dry, close, no reverb tail, no voice, no music, no background noise",
+  "seconds": 0.7
+ },
+ "mark_on": {
+  "prompt": "User interface sound for a modern car dashboard: one single very short bright high-pitched digital blip, crisp and clean. Dry, no reverb, no voice, no music, no background noise",
+  "seconds": 0.5
+ },
+ "mark_off": {
+  "prompt": "User interface sound for a modern car dashboard: two identical very short bright high-pitched digital blips in quick succession, crisp and clean. Dry, no reverb, no voice, no music, no background noise",
+  "seconds": 0.5
+ },
+ "lock": {
+  "prompt": "User interface sound for a modern car dashboard: a short soft mechanical latch click followed at once by one small low digital tone, like something being locked safely. Dry, no reverb, no voice, no music, no background noise",
+  "seconds": 0.5
+ },
+ "warn": {
+  "prompt": "Warning chime for a modern car dashboard: three quick identical urgent beeps, a clear firm mid-high digital alert tone that demands attention without being harsh. Dry, no reverb, no voice, no music, no background noise",
+  "seconds": 1.0
+ },
+ "notice": {
+  "prompt": "Gentle reminder sound for a modern car dashboard: one single soft warm bell-like digital ding with a short natural decay, like a polite seat belt reminder. No voice, no music, no background noise",
+  "seconds": 0.9
+ }
+}

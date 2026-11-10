@@ -67,6 +67,14 @@ LINES = {
     "no_route": "No route found.",
     "gps_lost": "GPS signal lost.",
     "gps_back": "GPS signal is back.",
+    # warnings, said after the warning chime (Cues.java)
+    "rec_stopped_storage": "Recording stopped. The storage is full.",
+    "rec_stopped_error": "Recording stopped. There is a problem with the camera.",
+    "rec_stopped_battery": "Recording stopped. The battery is low.",
+    "check_engine": "The check engine light is on.",
+    "engine_hot": "The engine is running hot.",
+    "phone_hot": "The phone is getting too hot.",
+    "fuel_stop": "Did you fill up? You can log it in the log book.",
 }
 
 
