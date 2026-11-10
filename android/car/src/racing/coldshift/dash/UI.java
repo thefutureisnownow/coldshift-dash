@@ -44,9 +44,9 @@ public class UI extends View implements Runnable {
         super(a);
         act = a;
         all = new Page[] {
-            new MediaPage(a), new MapsPage(a), new TrackPage(a), new SensorsPage(a),
+            new DrivePage(a), new MediaPage(a), new MapsPage(a), new TrackPage(a), new SensorsPage(a),
             new DashcamPage(a), new LogPage(a), new ConvoyPage(a), new SettingsPage(a, this)};
-        String[] names = {"media", "maps", "track", "sensors", "dashcam", "log", "convoy", "settings"};
+        String[] names = {"drive", "media", "maps", "track", "sensors", "dashcam", "log", "convoy", "settings"};
         for (int i = 0; i < all.length; i++) byName.put(names[i], all[i]);
         choosePages();
         // the page that was showing when the app last closed comes back
@@ -93,6 +93,7 @@ public class UI extends View implements Runnable {
     /** The pages the profile shows (Settings always, last, so the setup can always be reached). */
     private void choosePages() {
         java.util.List<Page> show = new java.util.ArrayList<Page>();
+        show.add(byName.get("drive"));                      // what a driver glances at: always there, first
         for (String n : Profile.pages(act)) show.add(byName.get(n));
         show.add(byName.get("settings"));
         pages = show.toArray(new Page[0]);
@@ -148,6 +149,8 @@ public class UI extends View implements Runnable {
         int mins = Prefs.idleMinutes(act);
         if (mins > 0 && !blank && idleSeconds() >= mins * 60L && System.currentTimeMillis() >= awakeUntil) setBlank(true);
         pages[cur].tick();
+        MapsPage maps = mapsPage();
+        if (pages[cur] != maps && maps.navigating()) maps.navTick();    // a journey goes on behind any page
         invalidate();
         handler.postDelayed(this, pages[cur].intervalMs());
     }

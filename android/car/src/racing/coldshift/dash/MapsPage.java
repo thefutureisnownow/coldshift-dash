@@ -75,6 +75,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
     String label() { return "Maps"; }
 
     @Override void onShow() {
+        shown = true;
         act.maps().show(mode == 0, this);
         refreshOverlay();
         Gps.get(act).add(this);
@@ -99,22 +100,80 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
     }
 
     @Override void onHide() {
+        shown = false;
         if (panel != null) panel.close();
         act.maps().hide();
-        Gps.get(act).remove(this);
+        // on the way somewhere, the positions keep coming: the turns are still spoken, and the Drive page shows them
+        if (destName == null) Gps.get(act).remove(this);
         if (!listening) return;
         if (sky != null) { ((GnssSky) sky).stop(lm); sky = null; }
         else lm.removeGpsStatusListener(this);
         listening = false;
     }
 
-    @Override void tick() {
+    private boolean shown;              // the Maps tab is the one showing
+
+    /** On the way somewhere (or waiting to be): UI keeps navTick going while another page shows. */
+    boolean navigating() { return destName != null; }
+
+    /** The part of the clock's tick that navigation needs, whichever page shows. */
+    void navTick() {
         if (arrivedAt != 0 && System.currentTimeMillis() - arrivedAt > 15000) endNav(true);
         if (destName != null && last != null && !gpsLostSaid && System.currentTimeMillis() - lastFixAt > 10000) {
             gpsLostSaid = true;
             Voice.get(act).say("gps_lost");
         }
-        else if (mode == 0 && (destName != null || act.maps().overlay() != null && act.maps().overlay().noFix != noFix()))
+    }
+
+    /** What the next turn is, for the map's banner and the Drive page; null when not navigating with a route. */
+    MapOverlay.NavInfo navInfo() {
+        if (destName == null || nav == null) return null;
+        MapOverlay.NavInfo i = new MapOverlay.NavInfo();
+        if (arrivedAt != 0) {
+            i.cmd = Route.END;
+            i.distance = "Arrived";
+            i.instruction = destName;
+        } else {
+            int h = nav.nextHint();
+            i.cmd = h < 0 ? Route.END : nav.route.hintCmd[h];
+            i.exit = h < 0 ? 0 : nav.route.hintExit[h];
+            i.distance = Nav.distance(nav.toNext());
+            i.instruction = Nav.instruction(i.cmd, i.exit);
+            int t = nav.thenHint(150);
+            if (t >= 0) {
+                i.thenCmd = nav.route.hintCmd[t];
+                i.thenExit = nav.route.hintExit[t];
+            }
+            if (routing && rerouting) i.status = "Off the route: finding a new one\u2026";
+            else if (nav.offRoute()) i.status = "Off the route";
+        }
+        i.remaining = Nav.distance(nav.remaining()).replace("Now", "0 m");
+        i.time = Nav.duration(nav.remainingSeconds());
+        i.eta = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(
+            new java.util.Date(System.currentTimeMillis() + nav.remainingSeconds() * 1000L));
+        return i;
+    }
+
+    /** A destination is chosen and there is no route yet: what it waits for, else null. */
+    String pending() {
+        if (destName == null || nav != null) return null;
+        return routing ? "Finding a route to " + destName + "\u2026" : "Waiting for GPS to go to " + destName;
+    }
+
+    /** Where it is going ("" when nowhere). */
+    String destination() { return destName == null ? "" : destName; }
+
+    /** Home as a destination; false when no Home is set. */
+    boolean goHome() {
+        Places.Place h = Places.get(act).find(Places.HOME);
+        if (h == null) return false;
+        navigateTo(h.lat, h.lon, h.name, h.sub);
+        return true;
+    }
+
+    @Override void tick() {
+        navTick();
+        if (mode == 0 && (destName != null || act.maps().overlay() != null && act.maps().overlay().noFix != noFix()))
             refreshOverlay();                                           // the arrival clock, and whether GPS is there
         if (!listening) onShowStatus();                    // refused before the permission was given: try again
         if (Api.SDK >= 24) return;                         // GnssSky tells the page as the sky changes
@@ -254,6 +313,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         MapOverlay o = act.maps().overlay();
         if (o != null && clearNote) o.note = "";
         refreshOverlay();
+        if (!shown) Gps.get(act).remove(this);             // it only listened on for the journey
     }
 
     /** Puts navigation and destination state into the overlay. */
@@ -270,32 +330,9 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         } else if (nav == null) {
             o.nav = null;
             if (o.note.startsWith("No route")) o.note = "";
-            o.pending = routing ? "Finding a route to " + destName + "\u2026" : "Waiting for GPS to go to " + destName;
+            o.pending = pending();
         } else {
-            MapOverlay.NavInfo i = new MapOverlay.NavInfo();
-            if (arrivedAt != 0) {
-                i.cmd = Route.END;
-                i.distance = "Arrived";
-                i.instruction = destName;
-            } else {
-                int h = nav.nextHint();
-                i.cmd = h < 0 ? Route.END : nav.route.hintCmd[h];
-                i.exit = h < 0 ? 0 : nav.route.hintExit[h];
-                i.distance = Nav.distance(nav.toNext());
-                i.instruction = Nav.instruction(i.cmd, i.exit);
-                int t = nav.thenHint(150);
-                if (t >= 0) {
-                    i.thenCmd = nav.route.hintCmd[t];
-                    i.thenExit = nav.route.hintExit[t];
-                }
-                if (routing && rerouting) i.status = "Off the route: finding a new one\u2026";
-                else if (nav.offRoute()) i.status = "Off the route";
-            }
-            i.remaining = Nav.distance(nav.remaining()).replace("Now", "0 m");
-            i.time = Nav.duration(nav.remainingSeconds());
-            i.eta = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(
-                new java.util.Date(System.currentTimeMillis() + nav.remainingSeconds() * 1000L));
-            o.nav = i;
+            o.nav = navInfo();
             if (o.note.startsWith("No route")) o.note = "";
         }
         o.postInvalidate();
