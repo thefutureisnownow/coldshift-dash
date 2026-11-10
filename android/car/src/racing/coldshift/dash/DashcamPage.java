@@ -255,7 +255,25 @@ class DashcamPage extends Page implements SensorEventListener {
 
     @Override boolean wide() { return true; }
 
+    // a list let go while moving carries on and slows (a fling)
+    private float vel;                  // layout px per second, down the list
+    private long velAt, flingAt;
+
+    private void fling() {
+        if (dragging || vel == 0) return;
+        long now = SystemClock.uptimeMillis();
+        float dt = Math.min(50, now - flingAt);
+        flingAt = now;
+        float to = clampScroll(scroll + vel * dt / 1000f);
+        boolean stopped = to == scroll;
+        scroll = to;
+        vel *= (float) Math.pow(0.996, dt);
+        if (stopped || Math.abs(vel) < 40) vel = 0;
+        else act.ui().postInvalidateDelayed(16);
+    }
+
     void draw(Canvas c) {
+        fling();
         status(c);
         right(c);
     }
@@ -739,18 +757,25 @@ class DashcamPage extends Page implements SensorEventListener {
         int a = e.getAction();
         if (a == MotionEvent.ACTION_DOWN) {
             downX = x; downY = y; lastY = y; moved = false;
+            vel = 0;                                            // a touch stops a list that is still moving
+            velAt = SystemClock.uptimeMillis();
             dragging = tab != TAB_SETTINGS && tab != TAB_PREVIEW && tab != TAB_INTERIOR && in(x, y, 561, LIST_T, Wide.rx(1260), LIST_B);
             return true;
         }
         if (a == MotionEvent.ACTION_MOVE && dragging) {
             if (Math.abs(y - downY) > 12) moved = true;
             if (moved) scroll = clampScroll(scroll - (y - lastY));
+            long now = SystemClock.uptimeMillis();
+            if (now > velAt) vel = 0.5f * vel + 0.5f * (-(y - lastY) * 1000f / (now - velAt));
+            velAt = now;
             lastY = y;
             return true;
         }
         if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) {
             boolean wasDrag = dragging;
             dragging = false;
+            if (!moved || Math.abs(vel) < 250 || SystemClock.uptimeMillis() - velAt > 120) vel = 0;
+            flingAt = SystemClock.uptimeMillis();
             if (a == MotionEvent.ACTION_UP && !moved) tap(x, y, wasDrag);
         }
         return true;

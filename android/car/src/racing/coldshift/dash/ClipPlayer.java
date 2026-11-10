@@ -128,9 +128,12 @@ final class ClipPlayer extends FrameLayout implements SurfaceHolder.Callback, Me
             return s / 60 + ":" + String.format(Locale.US, "%02d", s % 60);
         }
 
+        private final Press press = new Press(this);      // the pressed look and the tap buzz, as everywhere
+
         @Override protected void onDraw(Canvas c) {
             c.save();
             Screen.begin(c, this);
+            press.begin();
             Theme.P.setShader(null);
             Theme.P.setStyle(android.graphics.Paint.Style.FILL);
             Theme.P.setColor(0xf0050912);
@@ -151,10 +154,12 @@ final class ClipPlayer extends FrameLayout implements SurfaceHolder.Callback, Me
             Theme.text(c, "Close", CLOSE.centerX(), CLOSE.centerY() + 8, 22, Theme.TEXT, Theme.bold, Theme.CENTER);
             Theme.text(c, Theme.fit(new SimpleDateFormat("EEE d MMM  HH:mm:ss", Locale.US).format(new Date(file.lastModified()))
                 + "  ·  " + file.getName(), 900, 18, Theme.sans), 24, 30, 18, 0xccffffff, Theme.sans, Theme.LEFT);
+            press.end();
             c.restore();
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
+            press.touch(e);
             act.ui().poke();
             float x = Screen.x(this, e.getX()), y = Screen.y(this, e.getY());
             int a = e.getAction();

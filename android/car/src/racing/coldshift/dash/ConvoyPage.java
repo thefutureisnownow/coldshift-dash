@@ -530,7 +530,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         voiceOf.clear();
         replyAt.clear();
         replyOf.clear();
-        float y = 420;                                     // newest at the bottom, going up
+        float y = 408;                                     // newest at the bottom, going up
         for (int i = ms.size() - 1; i >= 0 && y > 130; i--) {
             Convoy.Message m = ms.get(i);
             List<String> lines = m.isVoice() ? voiceLines(m, m == now, colW - 32 * s, 19 * s) : wrap(m.text, colW, 19 * s, s > 1 ? 4 : 3);
@@ -597,7 +597,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             RectF r = quick(i);
             if (priv) privateButton(c, r, false, 10);
             else Theme.button(c, r, false, 10);
-            Theme.text(c, QUICK[i], r.centerX(), r.centerY() + 7, 18, priv ? 0xffffffff : Theme.TEXT, Theme.sans, Theme.CENTER);
+            Theme.text(c, QUICK[i], r.centerX(), r.centerY() + 7, 20, priv ? 0xffffffff : Theme.TEXT, Theme.sans, Theme.CENTER);
         }
         talkButton(c, TALK, act, who);
         boolean latched = Talk.get(act).latched();
@@ -730,8 +730,8 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
     static String late(int s) { return "came " + (s < 90 ? s + " s" : Math.round(s / 60f) + " min") + " late"; }
 
     private static RectF quick(int i) {
-        float w = (652 + Wide.d() - 2 * 10) / 3f, x = 598 + (i % 3) * (w + 10), y = 436 + (i / 3) * 56;
-        return new RectF(x, y, x + w, y + 48);
+        float w = (652 + Wide.d() - 2 * 10) / 3f, x = 598 + (i % 3) * (w + 10), y = 424 + (i / 3) * 62;
+        return new RectF(x, y, x + w, y + 56);
     }
 
     /** The text in lines no wider than maxW at this size, at most maxLines (the last ends in … if there was more). */

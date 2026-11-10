@@ -332,8 +332,7 @@ public class UI extends View implements Runnable {
 
         float r = 1264 + e;
         // Android 12 and up shows a green dot in this corner while the camera or microphone is in use
-        if (Api.SDK >= 31 && (Dashcam.get(act).recording || Dashcam.get(act).testing || Dashcam.get(act).shooting
-                || Sound.get(act).listening || Sound.get(act).recording)) r -= 64;
+        if (Api.SDK >= 31 && (Dashcam.get(act).cameraOn() || Sound.get(act).listening || Sound.get(act).recording)) r -= 64;
         if (charging) {
             Theme.text(c, "Charging", r, 33, 20, Theme.TEXT, Theme.sans, Theme.RIGHT);
             r -= Theme.width("Charging", 20, Theme.sans) + 12;

@@ -114,9 +114,12 @@ final class Keypad extends View {
 
     private int shownSuggestions() { return Math.min(suggestions.size(), 9); }
 
+    private final Press press = new Press(this);      // the pressed look and the tap buzz, as everywhere
+
     @Override protected void onDraw(Canvas c) {
         c.save();
         Screen.begin(c, this);
+        press.begin();
         c.drawColor(0xf205070d);
         Theme.text(c, title, 18, 46, 24, 0xffffffff, Theme.bold, Theme.LEFT);
         Theme.button(c, FIELD, false, 12);
@@ -147,6 +150,7 @@ final class Keypad extends View {
             Theme.text(c, label, r.centerX(), r.centerY() + size * 0.36f, size, special ? Theme.SUB : 0xffffffff,
                 special ? Theme.sans : Theme.bold, Theme.CENTER);
         }
+        press.end();
         c.restore();
     }
 
@@ -185,6 +189,7 @@ final class Keypad extends View {
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
+        press.touch(e);
         float x = Screen.x(this, e.getX()), y = Screen.y(this, e.getY());
         act.ui().poke();
         if (e.getAction() == MotionEvent.ACTION_DOWN) {

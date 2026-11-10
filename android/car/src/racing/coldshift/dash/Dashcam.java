@@ -528,6 +528,9 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         }
     }
 
+    /** Whether a camera is open (recording, previewing, testing, or the interior shot). */
+    boolean cameraOn() { return cam != null || front != null; }
+
     /** The camera's picture as it records, for a TextureView to show; null when this phone cannot. */
     SurfaceTexture liveTexture() { return recording && cam != null && stShowable ? st : null; }
 

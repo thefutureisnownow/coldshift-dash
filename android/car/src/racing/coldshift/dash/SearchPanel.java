@@ -154,9 +154,12 @@ final class SearchPanel extends View {
 
     private int visibleRows() { return (int) ((listBottom() - LIST_TOP + ROW_GAP) / (ROW_H + ROW_GAP)); }
 
+    private final Press press = new Press(this);      // the pressed look and the tap buzz, as everywhere
+
     @Override protected void onDraw(Canvas c) {
         c.save();
         Screen.begin(c, this);
+        press.begin();
         c.drawColor(0xf205070d);
         // the field
         Theme.button(c, FIELD, false, 12);
@@ -205,6 +208,7 @@ final class SearchPanel extends View {
             }
         }
         if (keyboard) drawKeys(c);
+        press.end();
         c.restore();
     }
 
@@ -294,6 +298,7 @@ final class SearchPanel extends View {
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
+        press.touch(e);
         float x = Screen.x(this, e.getX()), y = Screen.y(this, e.getY());
         if (getContext() instanceof Main) ((Main) getContext()).ui().poke();
         switch (e.getAction()) {

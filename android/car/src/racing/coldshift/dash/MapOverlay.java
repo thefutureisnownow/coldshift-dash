@@ -156,13 +156,14 @@ final class MapOverlay extends View {
         c.drawRoundRect(new RectF(b.left + 10, b.top + 10, b.left + 124, b.bottom - 10), 12, 12, Theme.P);
         turnIcon(c, b.left + 67, b.top + 67, 34, nav.cmd, nav.exit, 0xffffffff, 8);
         Theme.text(c, nav.distance, b.left + 142, b.top + 54, 40, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, nav.instruction, b.left + 142, b.top + 88, 20, Theme.TEXT, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(nav.instruction, b.right - b.left - 156, 28, Theme.sans), b.left + 142, b.top + 90, 28, Theme.TEXT,
+            Theme.sans, Theme.LEFT);
         if (nav.thenCmd >= 0) {
-            turnIcon(c, b.left + 152, b.top + 112, 10, nav.thenCmd, nav.thenExit, Theme.SUB, 3);
-            Theme.text(c, "then " + lower(Nav.instruction(nav.thenCmd, nav.thenExit)), b.left + 170, b.top + 118,
+            turnIcon(c, b.left + 152, b.top + 115, 10, nav.thenCmd, nav.thenExit, Theme.SUB, 3);
+            Theme.text(c, "then " + lower(Nav.instruction(nav.thenCmd, nav.thenExit)), b.left + 170, b.top + 121,
                 18, Theme.SUB, Theme.sans, Theme.LEFT);
         } else if (!nav.status.isEmpty()) {
-            Theme.text(c, nav.status, b.left + 142, b.top + 118, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
+            Theme.text(c, nav.status, b.left + 142, b.top + 121, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
         }
     }
 
