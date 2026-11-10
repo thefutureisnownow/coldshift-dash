@@ -38,22 +38,21 @@ class SoundPage extends Page {
     @Override void onHide() { sound.listen(false); }               // a recording carries on
 
     void draw(Canvas c) {
-        Theme.text(c, "SOUND", 24, 90, 30, 0xffffffff, Theme.bold, Theme.LEFT);
         String st = sound.status;
-        Theme.text(c, Theme.fit(!st.isEmpty() ? st : sound.listening ? sound.format : "", 560, 16, Theme.sans),
-            Wide.rx(1256), 84, 16, st.isEmpty() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.RIGHT);
+        Theme.text(c, Theme.fit(!st.isEmpty() ? st : sound.listening ? sound.format : "", 560, 18, Theme.sans),
+            Wide.rx(1256), 96, 18, st.isEmpty() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.RIGHT);
         left(c);
         right(c);
     }
 
     private void left(Canvas c) {
         Theme.panel(c, 14, 120, 700, 612);
-        Theme.text(c, "Input", 36, 158, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Input", 36, 158, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         String in = sound.listening && !sound.input.isEmpty() ? sound.input
             : Audio.supported() ? Audio.get(act).chosenLabel(Audio.RECORD_IN) : "The phone's microphone";
         Theme.text(c, Theme.fit(in, 640, 22, Theme.bold), 36, 186, 22, 0xffffffff, Theme.bold, Theme.LEFT);
         Theme.text(c, Theme.fit(Audio.supported() ? "Chosen in Settings → Sound (Sound recorder)" : "Android 4.4: the phone's own input only",
-            640, 13, Theme.sans), 36, 208, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+            640, 18, Theme.sans), 36, 208, 18, Theme.DIM, Theme.sans, Theme.LEFT);
 
         int ch = channels();
         for (int i = 0; i < ch; i++) meter(c, i, ch, METER_Y + i * METER_STEP);
@@ -61,16 +60,16 @@ class SoundPage extends Page {
         int[] marks = {-60, -40, -20, -12, -6, -3, 0};
         for (int m : marks) {
             float x = BAR_L + (BAR_R - BAR_L) * (m + 60) / 60f;
-            Theme.text(c, String.valueOf(m), x, scaleY, 12, Theme.DIM, Theme.sans, Theme.CENTER);
+            Theme.text(c, String.valueOf(m), x, scaleY, 18, Theme.DIM, Theme.sans, Theme.CENTER);
         }
-        Theme.text(c, "dBFS", BAR_R + 40, scaleY, 12, Theme.DIM, Theme.sans, Theme.CENTER);
-        Theme.text(c, sound.listening ? "Set the interface's gain so the loudest revs peak around -6, never in the red."
-            : "Listen shows the levels without recording. Tap a channel's name to change it.", 36, 470, 14, Theme.SUB, Theme.sans, Theme.LEFT);
-        Theme.text(c, "Listening or recording takes the microphone: the dashcam's clips go on without sound meanwhile.",
-            36, 494, 12, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "dBFS", BAR_R + 40, scaleY, 18, Theme.DIM, Theme.sans, Theme.CENTER);
+        Theme.text(c, Theme.fit(sound.listening ? "Set the gain so the loudest revs peak around -6, never in the red."
+            : "Tap a channel's name to change it.", 640, 18, Theme.sans), 36, 470, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit("The dashcam's clips have no sound while this listens or records.", 640, 18, Theme.sans),
+            36, 496, 18, Theme.DIM, Theme.sans, Theme.LEFT);
 
         Theme.button(c, LISTEN, sound.listening && !sound.recording, 14);
-        Theme.text(c, sound.listening && !sound.recording ? "Stop listening" : "Listen", LISTEN.centerX(), LISTEN.centerY() + 8, 21,
+        Theme.text(c, sound.listening && !sound.recording ? "Stop listening" : "Listen", LISTEN.centerX(), LISTEN.centerY() + 8, 22,
             0xffffffff, Theme.bold, Theme.CENTER);
         boolean rec = sound.recording;
         Theme.button(c, RECORD, !rec, 14);
@@ -80,14 +79,14 @@ class SoundPage extends Page {
             Theme.P.setColor(0xffa3233a);
             c.drawRoundRect(RECORD, 14, 14, Theme.P);
         }
-        Theme.text(c, rec ? "Stop recording" : "Record", RECORD.centerX(), RECORD.centerY() + 8, 21, 0xffffffff, Theme.bold, Theme.CENTER);
+        Theme.text(c, rec ? "Stop recording" : "Record", RECORD.centerX(), RECORD.centerY() + 8, 22, 0xffffffff, Theme.bold, Theme.CENTER);
         if (rec) {
             long s = (SystemClock.elapsedRealtime() - sound.recStartReal) / 1000;
             boolean blink = (SystemClock.elapsedRealtime() / 500) % 2 == 0;
             Theme.P.setColor(blink ? 0xffe4002b : 0xff8a1426);
             c.drawCircle(496, 562, 8, Theme.P);
             Theme.text(c, String.format(Locale.US, "%d:%02d", s / 60, s % 60), 512, 569, 22, 0xffffffff, Theme.bold, Theme.LEFT);
-            Theme.text(c, String.format(Locale.US, "%.1f MB", sound.recBytes / 1048576f), 512, 592, 14, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, String.format(Locale.US, "%.1f MB", sound.recBytes / 1048576f), 512, 592, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
     }
 
@@ -98,9 +97,9 @@ class SoundPage extends Page {
         Theme.text(c, ch == 1 ? "" : i == 0 ? "L" : "R", 44, y + 26, 18, Theme.SUB, Theme.bold, Theme.CENTER);
         String name = Prefs.soundChannel(act, i);
         String side = ch == 1 ? "Mono" : i == 0 ? "Left, input 1" : "Right, input 2";
-        Theme.text(c, Theme.fit(name.isEmpty() ? side + "  ·  tap to name it" : name, 360, 16, Theme.bold), BAR_L, y - 8, 16,
+        Theme.text(c, Theme.fit(name.isEmpty() ? side + "  ·  tap to name it" : name, 360, 18, Theme.bold), BAR_L, y - 8, 18,
             name.isEmpty() ? Theme.DIM : 0xffffffff, Theme.bold, Theme.LEFT);
-        if (!name.isEmpty()) Theme.text(c, side, BAR_R, y - 8, 12, Theme.DIM, Theme.sans, Theme.RIGHT);
+        if (!name.isEmpty()) Theme.text(c, side, BAR_R, y - 8, 18, Theme.DIM, Theme.sans, Theme.RIGHT);
         RectF track = new RectF(BAR_L, y, BAR_R, y + 34);
         Theme.P.setShader(null);
         Theme.P.setStyle(Paint.Style.FILL);
@@ -121,7 +120,7 @@ class SoundPage extends Page {
         }
         Theme.P.setColor(clip ? 0xffe4002b : Theme.accent(0x40));
         c.drawCircle(BAR_R + 40, y + 17, 13, Theme.P);
-        Theme.text(c, clip ? "CLIP" : pk <= -119 ? "-" : String.format(Locale.US, "%.0f", pk), BAR_R + 40, y + 22, clip ? 10 : 13,
+        Theme.text(c, clip ? "CLIP" : pk <= -119 ? "-" : String.format(Locale.US, "%.0f", pk), BAR_R + 40, y + 22, clip ? 14 : 16,
             0xffffffff, Theme.bold, Theme.CENTER);
     }
 
@@ -130,36 +129,36 @@ class SoundPage extends Page {
     private void right(Canvas c) {
         float l = 716, r = Wide.rx(1266);
         Theme.panel(c, l, 120, r, 612);
-        Theme.text(c, "Engine, written beside the sound", l + 22, 158, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Engine, written beside the sound", l + 22, 158, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         Obd o = Obd.get(act);
         float rpm = o.value(Obd.RPM), kmh = o.value(Obd.SPEED), thr = o.value(Obd.THROTTLE);
         if (Float.isNaN(rpm) && Float.isNaN(kmh)) {
             Theme.text(c, "Not connected", l + 22, 196, 24, Theme.SUB, Theme.bold, Theme.LEFT);
-            Theme.text(c, Theme.fit("The readings in the CSV stay blank until the Engine view is talking to the car.", r - l - 44, 13, Theme.sans),
-                l + 22, 220, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit("The readings in the CSV stay blank until the Engine view is talking to the car.", r - l - 44, 18, Theme.sans),
+                l + 22, 220, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         } else {
             String[][] v = {{num(rpm), "rpm"}, {num(kmh), "km/h"}, {num(thr), "% throttle"}};
             float x = l + 22;
             for (String[] p : v) {
                 Theme.text(c, p[0], x, 204, 36, 0xffffffff, Theme.bold, Theme.LEFT);
-                Theme.text(c, p[1], x, 226, 13, Theme.SUB, Theme.sans, Theme.LEFT);
+                Theme.text(c, p[1], x, 226, 18, Theme.SUB, Theme.sans, Theme.LEFT);
                 x += (r - l - 44) / 3;
             }
         }
 
         List<File> recs = sound.recordings();
-        Theme.text(c, "Recordings  ·  " + recs.size(), l + 22, 278, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Recordings  ·  " + recs.size(), l + 22, 278, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         float y = 312;
         for (int i = 0; i < Math.min(6, recs.size()); i++) {
             File f = recs.get(i);
             boolean now = sound.recording && f.equals(sound.file);
-            Theme.text(c, when(f) + (now ? "  ·  recording" : ""), l + 22, y, 17, now ? Theme.GOLD : 0xffffffff, Theme.bold, Theme.LEFT);
-            Theme.text(c, String.format(Locale.US, "%.1f MB", f.length() / 1048576f), r - 22, y, 15, Theme.SUB, Theme.sans, Theme.RIGHT);
+            Theme.text(c, when(f) + (now ? "  ·  recording" : ""), l + 22, y, 18, now ? Theme.GOLD : 0xffffffff, Theme.bold, Theme.LEFT);
+            Theme.text(c, String.format(Locale.US, "%.1f MB", f.length() / 1048576f), r - 22, y, 18, Theme.SUB, Theme.sans, Theme.RIGHT);
             y += 38;
         }
-        if (recs.isEmpty()) Theme.text(c, "None yet", l + 22, y, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+        if (recs.isEmpty()) Theme.text(c, "None yet", l + 22, y, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         Theme.text(c, Theme.fit("In Dashcam/Sound, a CSV of readings beside each WAV. The desktop tool copies them with the recordings.",
-            r - l - 44, 12, Theme.sans), l + 22, 594, 12, Theme.DIM, Theme.sans, Theme.LEFT);
+            r - l - 44, 18, Theme.sans), l + 22, 594, 18, Theme.DIM, Theme.sans, Theme.LEFT);
     }
 
     private static String num(float v) { return Float.isNaN(v) ? "-" : String.format(Locale.US, "%.0f", v); }

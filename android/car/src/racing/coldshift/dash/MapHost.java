@@ -112,7 +112,11 @@ final class MapHost implements View.OnTouchListener {
                 mv.getLayerManager().getLayers().add(new LabelLayer(AndroidGraphicFactory.INSTANCE, layer.getLabelStore()));
                 if (route != null) drawRoute();
                 if (pinAt != null) showPin(pinAt);
-                LatLong start = file.startPosition();
+                // where the car last was, when the map covers it: the file's own start is often open country
+                LatLong start = null;
+                double[] was = Gps.get(act).lastKnown();
+                if (was != null && file.boundingBox().contains(was[0], was[1])) start = new LatLong(was[0], was[1]);
+                if (start == null) start = file.startPosition();
                 if (start == null) start = file.boundingBox().getCenterPoint();
                 mv.setCenter(start);
                 byte z = file.getMapFileInfo().startZoomLevel != null ? file.getMapFileInfo().startZoomLevel : 14;

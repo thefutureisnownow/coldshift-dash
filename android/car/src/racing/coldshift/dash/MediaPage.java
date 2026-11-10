@@ -83,6 +83,11 @@ class MediaPage extends Page {
         if (n == builtCount && folder.equals(builtFolder) && avail == builtAvail) return;
         if (!folder.startsWith(lib.root)) folder = lib.root;
         entries = lib.entries(folder);
+        // a folder that is gone or empty after a sync: back to the top, not a dead end
+        if (entries.isEmpty() && !folder.equals(lib.root) && !lib.scanning && avail) {
+            folder = lib.root;
+            entries = lib.entries(folder);
+        }
         firstOf.clear();
         for (Library.Entry e : entries) {
             if (e.dir) {
@@ -139,7 +144,7 @@ class MediaPage extends Page {
                 c.drawBitmap(logo, null, r, Theme.BMP);
             }
             Theme.text(c, "No track selected", 398, 312, 31, 0xffffffff, Theme.bold, Theme.CENTER);
-            Theme.text(c, "Pick a track on the right", 398, 344, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Pick a track on the right", 398, 344, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         } else {
             Bitmap b = art.track(t, 280);
             RectF r = new RectF(32, 85, 312, 365);
@@ -152,17 +157,18 @@ class MediaPage extends Page {
             Theme.P.setStyle(Paint.Style.FILL);
             Theme.text(c, Theme.fit(t.displayTitle(), 430, 29, Theme.bold), 333, 195, 29, 0xffffffff, Theme.bold, Theme.LEFT);
             if (!t.artist.isEmpty())
-                Theme.text(c, Theme.fit(t.artist, 430, 21, Theme.sans), 333, 228, 21, 0xffc9d6ea, Theme.sans, Theme.LEFT);
+                Theme.text(c, Theme.fit(t.artist, 430, 22, Theme.sans), 333, 228, 22, 0xffc9d6ea, Theme.sans, Theme.LEFT);
             if (!t.album.isEmpty())
-                Theme.text(c, Theme.fit(t.album, 430, 16, Theme.sans), 333, 254, 16, Theme.DIM, Theme.sans, Theme.LEFT);
+                Theme.text(c, Theme.fit(t.album, 430, 18, Theme.sans), 333, 254, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             String where = pl.queuePos() + " of " + pl.queueSize() + " \u00b7 " + new java.io.File(t.folder).getName();
-            Theme.text(c, Theme.fit(where, 430, 13, Theme.sans), 333, 276, 13, Theme.DIMMER, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit(where, 430, 18, Theme.sans), 333, 276, 18, Theme.DIMMER, Theme.sans, Theme.LEFT);
         }
 
         int dur = pl.duration(), pos = pl.position();
+        if (pl.current() == null) dur = pos = 0;                // nothing chosen: no time left over from the last song
         float frac = dragging == 1 ? dragFrac : (dur > 0 ? pos / (float) dur : 0);
-        Theme.text(c, mmss(dragging == 1 ? (int) (dragFrac * dur) : pos), 46, 407, 15, Theme.SUB, Theme.sans, Theme.LEFT);
-        Theme.text(c, mmss(dur), 750, 407, 15, Theme.SUB, Theme.sans, Theme.RIGHT);
+        Theme.text(c, mmss(dragging == 1 ? (int) (dragFrac * dur) : pos), 46, 407, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, mmss(dur), 750, 407, 18, Theme.SUB, Theme.sans, Theme.RIGHT);
         Theme.slider(c, 100, 691, 401, frac);
 
         for (int i = 0; i < BTN.length; i++) {
@@ -200,7 +206,7 @@ class MediaPage extends Page {
             tx = 881;
         }
         String title = atRoot ? lib.rootLabel() : new java.io.File(folder).getName();
-        Theme.text(c, Theme.fit(title, (atRoot ? 300 : 236) + q, 21, Theme.bold), tx, 116, 21, 0xffe8eef7, Theme.bold, Theme.LEFT);
+        Theme.text(c, Theme.fit(title, (atRoot ? 300 : 236) + q, 22, Theme.bold), tx, 116, 22, 0xffe8eef7, Theme.bold, Theme.LEFT);
         if (!entries.isEmpty()) {
             RectF pa = new RectF(1129 + q, 84, 1185 + q, 134), sh = new RectF(1193 + q, 84, 1249 + q, 134);
             Theme.button(c, pa, false, 12);
@@ -211,14 +217,14 @@ class MediaPage extends Page {
         String sub;
         if (lib.scanning) sub = "Scanning " + lib.scanned + " of " + lib.total + "\u2026";
         else sub = lib.countIn(folder) + " songs here \u00b7 " + lib.all().size() + " songs on the " + lib.rootLabel().toLowerCase();
-        Theme.text(c, sub, 817, 151, 13, lib.scanning ? Theme.GOLD : Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, sub, 817, 151, 18, lib.scanning ? Theme.GOLD : Theme.DIM, Theme.sans, Theme.LEFT);
 
         c.save();
         c.clipRect(803, LIST_T, 1260 + q, LIST_B);
         if (entries.isEmpty()) {
             String msg = !lib.rootAvailable() ? "No " + lib.rootLabel().toLowerCase() + " found"
                 : lib.scanning ? "Reading your music\u2026" : "No music found in " + new java.io.File(folder).getName();
-            Theme.text(c, msg, 1031 + q / 2, 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, msg, 1031 + q / 2, 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         }
         Track cur = pl.current();
         float y = LIST_T - scroll;
@@ -248,30 +254,30 @@ class MediaPage extends Page {
             String n = e.name;
             float maxW = 1190 + q - x;
             String l1 = n, l2 = null;
-            if (Theme.width(n, 17, Theme.sans) > maxW) {
+            if (Theme.width(n, 18, Theme.sans) > maxW) {
                 int cut = n.length();
-                while (cut > 1 && Theme.width(n.substring(0, cut), 17, Theme.sans) > maxW) cut--;
+                while (cut > 1 && Theme.width(n.substring(0, cut), 18, Theme.sans) > maxW) cut--;
                 int sp = n.lastIndexOf(' ', cut);
                 if (sp > 0) cut = sp;
                 l1 = n.substring(0, cut).trim();
-                l2 = Theme.fit(n.substring(cut).trim(), maxW, 17, Theme.sans);
+                l2 = Theme.fit(n.substring(cut).trim(), maxW, 18, Theme.sans);
             }
             if (l2 == null) {
-                Theme.text(c, l1, x, y + 31, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-                Theme.text(c, e.count + (e.count == 1 ? " song" : " songs"), x, y + 53, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+                Theme.text(c, l1, x, y + 31, 18, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.text(c, e.count + (e.count == 1 ? " song" : " songs"), x, y + 53, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             } else {
-                Theme.text(c, l1, x, y + 28, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-                Theme.text(c, l2, x, y + 49, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-                Theme.text(c, e.count + (e.count == 1 ? " song" : " songs"), x, y + 68, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+                Theme.text(c, l1, x, y + 28, 18, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.text(c, l2, x, y + 49, 18, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.text(c, e.count + (e.count == 1 ? " song" : " songs"), x, y + 68, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             }
             Icons.chevron(c, 1230 + q, y + h / 2, false, 0xff6f86a6);
         } else {
             boolean playing = cur != null && cur.path.equals(e.track.path);
-            Theme.text(c, Theme.fit(e.track.displayTitle(), 300 + q, 17, Theme.sans), x, y + 28, 17,
+            Theme.text(c, Theme.fit(e.track.displayTitle(), 300 + q, 18, Theme.sans), x, y + 28, 18,
                 playing ? Theme.GOLD : 0xffe8eef7, Theme.sans, Theme.LEFT);
             String sub = e.track.artist.isEmpty() ? "Unknown artist" : e.track.artist;
-            Theme.text(c, Theme.fit(sub, 300 + q, 13, Theme.sans), x, y + 48, 13, Theme.DIM, Theme.sans, Theme.LEFT);
-            Theme.text(c, mmss(e.track.durationMs), 1242 + q, y + 36, 13, Theme.DIM, Theme.sans, Theme.RIGHT);
+            Theme.text(c, Theme.fit(sub, 300 + q, 18, Theme.sans), x, y + 48, 18, Theme.DIM, Theme.sans, Theme.LEFT);
+            Theme.text(c, mmss(e.track.durationMs), 1242 + q, y + 36, 18, Theme.DIM, Theme.sans, Theme.RIGHT);
         }
     }
 

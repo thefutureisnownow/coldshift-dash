@@ -178,7 +178,7 @@ final class SearchPanel extends View {
         Theme.text(c, "Close", CLOSE.centerX(), CLOSE.centerY() + 8, 22, Theme.TEXT, Theme.bold, Theme.CENTER);
         String line = searching ? "Searching…" : !status.isEmpty() ? status
             : Search.fold(q).length() >= Search.MIN_CHARS && rows.isEmpty() ? "Nothing found for “" + q.trim() + "”" : "";
-        if (!line.isEmpty()) Theme.text(c, line, 32, 104, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+        if (!line.isEmpty()) Theme.text(c, line, 32, 104, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         // the rows
         int n = Math.min(rows.size(), visibleRows());
         for (int i = 0; i < n; i++) {
@@ -194,9 +194,9 @@ final class SearchPanel extends View {
                 right -= Theme.width(d, 18, Theme.sans) + 24;
             }
             float maxW = right - b.left - 20;
-            Theme.text(c, Theme.fit(r.name, maxW, 21, Theme.bold), b.left + 18, b.top + 27, 21,
+            Theme.text(c, Theme.fit(r.name, maxW, 22, Theme.bold), b.left + 18, b.top + 27, 22,
                 r.unset ? Theme.SUB : Theme.TEXT, Theme.bold, Theme.LEFT);
-            Theme.text(c, Theme.fit(r.sub, maxW, 15, Theme.sans), b.left + 18, b.top + 50, 15, Theme.SUB, Theme.sans,
+            Theme.text(c, Theme.fit(r.sub, maxW, 18, Theme.sans), b.left + 18, b.top + 50, 18, Theme.SUB, Theme.sans,
                 Theme.LEFT);
             if (r.removable) {
                 RectF x = removeRect(b);

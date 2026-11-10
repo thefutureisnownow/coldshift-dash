@@ -9,8 +9,9 @@ import android.view.MotionEvent;
  * between them at the top. The one last shown comes back (preferences).
  */
 class SensorsPage extends Page {
-    private static final RectF[] CHIPS = {Wide.centre(new RectF(328, 62, 476, 102)), Wide.centre(new RectF(484, 62, 632, 102)),
-        Wide.centre(new RectF(640, 62, 788, 102)), Wide.centre(new RectF(796, 62, 944, 102))};
+    // the switch between the parts is the page's heading: at the left, 56 high; a part's own buttons sit at the right
+    private static final RectF[] CHIPS = {new RectF(14, 60, 164, 116), new RectF(172, 60, 322, 116),
+        new RectF(330, 60, 480, 116), new RectF(488, 60, 638, 116)};
     private static final String[] NAMES = {"Engine", "Diagnostics", "Tyres", "Sound"};
 
     private final Page[] parts;

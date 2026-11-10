@@ -165,11 +165,11 @@ class TrackPage extends Page implements Gps.Listener {
             Theme.button(c, r, s == selected, 12);
             Theme.text(c, Theme.fit(s.name, 400, 20, Theme.bold), r.left + 16, r.top + 28, 20, 0xffffffff, Theme.bold,
                 Theme.LEFT);
-            Theme.text(c, (s.lap ? "Lap" : "Point to point") + " · " + km(s.length()), r.left + 16, r.top + 52, 15,
+            Theme.text(c, (s.lap ? "Lap" : "Point to point") + " · " + km(s.length()), r.left + 16, r.top + 52, 18,
                 Theme.SUB, Theme.sans, Theme.LEFT);
         }
         if (segments.isEmpty() && timer.state != TrackTimer.State.RECORDING) {
-            Theme.text(c, "No segments yet.", 31, 140, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "No segments yet.", 31, 140, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
 
         Theme.panel(c, 484, 68, Wide.rx(1266), 625);
@@ -213,18 +213,18 @@ class TrackPage extends Page implements Gps.Listener {
             Theme.sans, Theme.LEFT);
         Theme.text(c, bestMs > 0 ? TrackTimer.time(bestMs / 1000.0) : "No runs yet", 510, 230, 64, 0xffffffff,
             Theme.bold, Theme.LEFT);
-        if (bestMs > 0) Theme.text(c, "best of " + runs.size() + (runs.size() == 1 ? " run" : " runs"), 510, 262, 17,
+        if (bestMs > 0) Theme.text(c, "best of " + runs.size() + (runs.size() == 1 ? " run" : " runs"), 510, 262, 18,
             Theme.SUB, Theme.sans, Theme.LEFT);
         SimpleDateFormat when = new SimpleDateFormat("d MMM  HH:mm", Locale.US);
         for (int i = 0; i < Math.min(runs.size(), 6); i++) {
             TrackStore.RunInfo r = runs.get(i);
             float y = 312 + i * 36;
-            Theme.text(c, when.format(new Date(r.start)) + (r.lap > 0 ? "  · lap " + r.lap : ""), 510, y, 17,
+            Theme.text(c, when.format(new Date(r.start)) + (r.lap > 0 ? "  · lap " + r.lap : ""), 510, y, 18,
                 Theme.SUB, Theme.sans, Theme.LEFT);
-            Theme.text(c, TrackTimer.time(r.timeMs / 1000.0), 790, y, 19, r.timeMs == bestMs ? Theme.GOLD : 0xffffffff,
+            Theme.text(c, TrackTimer.time(r.timeMs / 1000.0), 790, y, 20, r.timeMs == bestMs ? Theme.GOLD : 0xffffffff,
                 Theme.bold, Theme.RIGHT);
-            if (r.timeMs != bestMs) Theme.text(c, delta(r.timeMs - bestMs), 870, y, 17, Theme.BAD, Theme.sans, Theme.RIGHT);
-            if (r.mark > 0) Theme.text(c, "clip " + r.mark, 890, y, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+            if (r.timeMs != bestMs) Theme.text(c, delta(r.timeMs - bestMs), 870, y, 18, Theme.BAD, Theme.sans, Theme.RIGHT);
+            if (r.mark > 0) Theme.text(c, "clip " + r.mark, 890, y, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
         map(c, PREVIEW, s, 0);
         Theme.button(c, START, true, 12);
@@ -232,7 +232,7 @@ class TrackPage extends Page implements Gps.Listener {
         Theme.button(c, DELETE, false, 12);
         Theme.text(c, confirmDelete ? "Tap again to delete" : "Delete segment", DELETE.centerX(), DELETE.centerY() + 7, 18,
             confirmDelete ? Theme.BAD : Theme.SUB, Theme.sans, Theme.CENTER);
-        if (!note.isEmpty()) Theme.text(c, note, 510, 530, 16, Theme.GOLD, Theme.bold, Theme.LEFT);
+        if (!note.isEmpty()) Theme.text(c, note, 510, 530, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
     }
 
     private void trackMode(Canvas c) {
@@ -241,7 +241,7 @@ class TrackPage extends Page implements Gps.Listener {
         boolean run = timer.running();
         Theme.text(c, Theme.fit(s.name, 700, 24, Theme.bold) + (s.lap && timer.lap() > 0 ? "  ·  lap " + timer.lap() : ""),
             34, 108, 24, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, "Track mode · closed tracks only", Wide.rx(1246), 108, 15, Theme.GOLD, Theme.sans, Theme.RIGHT);
+        Theme.text(c, "Track mode · closed tracks only", Wide.rx(1246), 108, 18, Theme.GOLD, Theme.sans, Theme.RIGHT);
         float cx = (s.lap ? 380 : 430) + Wide.d() / 2;         // the timer in the middle of what the map leaves
         map(c, s.lap ? MAP_LAP : MAP_RUN, s, timer.along());
         if (run) {
@@ -291,7 +291,7 @@ class TrackPage extends Page implements Gps.Listener {
             Theme.text(c, TrackTimer.time(r.timeMs / 1000.0), Wide.rx(1232), y, 20, r.timeMs == best ? Theme.GOLD : 0xffffffff,
                 Theme.bold, Theme.RIGHT);
         }
-        if (session.isEmpty()) Theme.text(c, "Times appear here", Wide.rx(1018), 204, 16, Theme.SUB, Theme.sans, Theme.LEFT);
+        if (session.isEmpty()) Theme.text(c, "Times appear here", Wide.rx(1018), 204, 18, Theme.SUB, Theme.sans, Theme.LEFT);
     }
 
     // ---- touch ----

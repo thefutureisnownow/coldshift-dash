@@ -142,15 +142,15 @@ final class ClipPlayer extends FrameLayout implements SurfaceHolder.Callback, Me
             if (playing) Icons.pause(c, PLAY.centerX(), PLAY.centerY(), 14, 0xffffffff);
             else Icons.play(c, PLAY.centerX() + 2, PLAY.centerY(), 14, 0xffffffff);
             Theme.button(c, BACK, false, 12);
-            Theme.text(c, "−10", BACK.centerX(), BACK.centerY() + 7, 19, Theme.TEXT, Theme.bold, Theme.CENTER);
+            Theme.text(c, "−10", BACK.centerX(), BACK.centerY() + 7, 20, Theme.TEXT, Theme.bold, Theme.CENTER);
             Theme.button(c, FWD, false, 12);
-            Theme.text(c, "+10", FWD.centerX(), FWD.centerY() + 7, 19, Theme.TEXT, Theme.bold, Theme.CENTER);
+            Theme.text(c, "+10", FWD.centerX(), FWD.centerY() + 7, 20, Theme.TEXT, Theme.bold, Theme.CENTER);
             Theme.slider(c, SEEK_L, SEEK_R, SEEK_Y, len > 0 ? (float) pos / len : 0);
             Theme.text(c, time(pos) + " / " + time(len), SEEK_R + 16, SEEK_Y + 7, 18, Theme.SUB, Theme.sans, Theme.LEFT);
             Theme.button(c, CLOSE, false, 12);
-            Theme.text(c, "Close", CLOSE.centerX(), CLOSE.centerY() + 8, 21, Theme.TEXT, Theme.bold, Theme.CENTER);
+            Theme.text(c, "Close", CLOSE.centerX(), CLOSE.centerY() + 8, 22, Theme.TEXT, Theme.bold, Theme.CENTER);
             Theme.text(c, Theme.fit(new SimpleDateFormat("EEE d MMM  HH:mm:ss", Locale.US).format(new Date(file.lastModified()))
-                + "  ·  " + file.getName(), 900, 16, Theme.sans), 24, 30, 16, 0xccffffff, Theme.sans, Theme.LEFT);
+                + "  ·  " + file.getName(), 900, 18, Theme.sans), 24, 30, 18, 0xccffffff, Theme.sans, Theme.LEFT);
             c.restore();
         }
 

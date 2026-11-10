@@ -49,11 +49,12 @@ final class MapOverlay extends View {
     private static final RectF CARD_CLOSE = Wide.centre(new RectF(928, 470, 972, 514));
     // navigation
     private static final RectF BANNER = new RectF(28, 154, 600, 288);
-    private static final RectF STRIP = Wide.centre(new RectF(330, 552, 950, 612));
-    private static final RectF END = Wide.centre(new RectF(860, 560, 940, 604));
+    private static final RectF STRIP = Wide.centre(new RectF(310, 544, 970, 612));
+    private static final RectF END = Wide.centre(new RectF(846, 550, 964, 606));
     // in a convoy: push to talk (Talk), and Cancel under it while a tapped one records
     private static final RectF TALK = new RectF(28, 372, 168, 472), TALK_CANCEL = new RectF(28, 482, 168, 530);
     private boolean holding;            // Talk is down
+    private final Press press = new Press(this);
 
     private Listener listener;
     boolean gpsMode, follow = true, hasMap, headingUp;
@@ -64,6 +65,8 @@ final class MapOverlay extends View {
     String pickSub = "";
     boolean pickSaved;
     NavInfo nav;                     // non-null while navigating
+    String pending;                  // a destination chosen and no route yet: what it waits for (with Cancel)
+    boolean noFix;                   // no GPS position yet, or none lately
 
     MapOverlay(Context c) {
         super(c);
@@ -80,8 +83,10 @@ final class MapOverlay extends View {
         c.save();
         Screen.begin(c, this);
         c.translate(-Screen.extra(this), 0);                // the overlay spans the screen, as the Maps page (Wide)
+        press.begin();
         if (gpsMode) {
             bigButton(c, MODE_GPS, "Map");
+            press.end();
             c.restore();
             return;
         }
@@ -108,10 +113,12 @@ final class MapOverlay extends View {
         Theme.panel(c, SPEED.left, SPEED.top, SPEED.right, SPEED.bottom);
         String s = speedKmh < 0 ? "--" : String.valueOf(Math.round(speedKmh));
         Theme.text(c, s, SPEED.left + 28, SPEED.top + 48, 40, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, "km/h", SPEED.right - 20, SPEED.top + 48, 17, Theme.SUB, Theme.sans, Theme.RIGHT);
+        Theme.text(c, "km/h", SPEED.right - 20, SPEED.top + 48, 18, Theme.SUB, Theme.sans, Theme.RIGHT);
         if (nav != null) {
             banner(c);
             strip(c);
+        } else if (pending != null) {
+            waiting(c);
         } else if (pickTitle != null) {
             card(c);
         }
@@ -119,15 +126,22 @@ final class MapOverlay extends View {
             ConvoyPage.talkButton(c, TALK, getContext());
             if (Talk.get(getContext()).latched()) {
                 Theme.button(c, TALK_CANCEL, false, 12);
-                Theme.text(c, "Cancel", TALK_CANCEL.centerX(), TALK_CANCEL.centerY() + 7, 19, Theme.BAD, Theme.bold, Theme.CENTER);
+                Theme.text(c, "Cancel", TALK_CANCEL.centerX(), TALK_CANCEL.centerY() + 7, 20, Theme.BAD, Theme.bold, Theme.CENTER);
             }
             if (Talk.get(getContext()).recording()) postInvalidateDelayed(250);     // the clock
         }
-        if (!note.isEmpty()) {
-            float y = nav != null || pickTitle != null ? 446 : 612;
-            Theme.text(c, note, 640, y, 16, Theme.GOLD, Theme.bold, Theme.CENTER);
+        String say = !note.isEmpty() ? note : noFix && hasMap && pending == null ? "Waiting for GPS: the map shows where you last were" : "";
+        if (!say.isEmpty()) {
+            float y = nav != null || pending != null || pickTitle != null ? 446 : 606;
+            float w = Theme.width(say, 18, Theme.bold) + 36;
+            Theme.P.setShader(null);
+            Theme.P.setStyle(Paint.Style.FILL);
+            Theme.P.setColor(0xd9050912);                       // readable over the map
+            c.drawRoundRect(new RectF(Wide.W / 2 - w / 2, y - 26, Wide.W / 2 + w / 2, y + 12), 10, 10, Theme.P);
+            Theme.text(c, say, Wide.W / 2, y, 18, Theme.GOLD, Theme.bold, Theme.CENTER);
         }
-        Theme.text(c, "© OpenStreetMap contributors", Wide.rx(1250), 618, 11, 0xaaffffff, Theme.sans, Theme.RIGHT);
+        Theme.text(c, "© OpenStreetMap contributors", Wide.rx(1250), 618, 12, 0xaaffffff, Theme.sans, Theme.RIGHT);
+        press.end();
         c.restore();
     }
 
@@ -146,10 +160,20 @@ final class MapOverlay extends View {
         if (nav.thenCmd >= 0) {
             turnIcon(c, b.left + 152, b.top + 112, 10, nav.thenCmd, nav.thenExit, Theme.SUB, 3);
             Theme.text(c, "then " + lower(Nav.instruction(nav.thenCmd, nav.thenExit)), b.left + 170, b.top + 118,
-                15, Theme.SUB, Theme.sans, Theme.LEFT);
+                18, Theme.SUB, Theme.sans, Theme.LEFT);
         } else if (!nav.status.isEmpty()) {
-            Theme.text(c, nav.status, b.left + 142, b.top + 118, 15, Theme.GOLD, Theme.bold, Theme.LEFT);
+            Theme.text(c, nav.status, b.left + 142, b.top + 118, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
         }
+    }
+
+    /** A destination is chosen and there is no route yet: says what it waits for, with a way out. */
+    private void waiting(Canvas c) {
+        RectF r = STRIP;
+        Theme.panel(c, r.left, r.top, r.right, r.bottom);
+        Theme.text(c, Theme.fit(pending, END.left - r.left - 36, 20, Theme.bold), r.left + 20, r.top + 38, 20, Theme.GOLD,
+            Theme.bold, Theme.LEFT);
+        Theme.button(c, END, false, 10);
+        Theme.text(c, "Cancel", END.centerX(), END.centerY() + 7, 20, Theme.BAD, Theme.bold, Theme.CENTER);
     }
 
     private static String lower(String s) { return s.isEmpty() ? s : Character.toLowerCase(s.charAt(0)) + s.substring(1); }
@@ -157,11 +181,11 @@ final class MapOverlay extends View {
     private void strip(Canvas c) {
         RectF r = STRIP;
         Theme.panel(c, r.left, r.top, r.right, r.bottom);
-        Theme.text(c, nav.remaining, r.left + 20, r.top + 39, 24, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, nav.time, r.left + 190, r.top + 39, 24, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, "arrive " + nav.eta, r.left + 360, r.top + 39, 20, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, nav.remaining, r.left + 20, r.top + 43, 24, 0xffffffff, Theme.bold, Theme.LEFT);
+        Theme.text(c, nav.time, r.left + 190, r.top + 43, 24, 0xffffffff, Theme.bold, Theme.LEFT);
+        Theme.text(c, "arrive " + nav.eta, r.left + 360, r.top + 43, 20, Theme.SUB, Theme.sans, Theme.LEFT);
         Theme.button(c, END, false, 10);
-        Theme.text(c, "End", END.centerX(), END.centerY() + 7, 18, Theme.BAD, Theme.bold, Theme.CENTER);
+        Theme.text(c, "End", END.centerX(), END.centerY() + 7, 20, Theme.BAD, Theme.bold, Theme.CENTER);
     }
 
     /**
@@ -263,17 +287,17 @@ final class MapOverlay extends View {
         Theme.panel(c, r.left, r.top, r.right, r.bottom);
         Theme.text(c, Theme.fit(pickTitle, r.width() - 90, 20, Theme.bold), r.left + 18, r.top + 34, 20, Theme.TEXT,
             Theme.bold, Theme.LEFT);
-        Theme.text(c, Theme.fit(pickSub, r.width() - 36, 14, Theme.sans), r.left + 18, r.top + 60, 14, Theme.SUB,
+        Theme.text(c, Theme.fit(pickSub, r.width() - 36, 18, Theme.sans), r.left + 18, r.top + 60, 18, Theme.SUB,
             Theme.sans, Theme.LEFT);
         Theme.button(c, CARD_GO, true, 10);
-        Theme.text(c, "Go", CARD_GO.centerX(), CARD_GO.centerY() + 7, 19, 0xffffffff, Theme.bold, Theme.CENTER);
+        Theme.text(c, "Go", CARD_GO.centerX(), CARD_GO.centerY() + 7, 20, 0xffffffff, Theme.bold, Theme.CENTER);
         Theme.button(c, CARD_SAVE, pickSaved, 10);
-        Theme.text(c, pickSaved ? "\u2605 Saved" : "\u2606 Save", CARD_SAVE.centerX(), CARD_SAVE.centerY() + 6, 16,
+        Theme.text(c, pickSaved ? "\u2605 Saved" : "\u2606 Save", CARD_SAVE.centerX(), CARD_SAVE.centerY() + 6, 18,
             pickSaved ? 0xffffffff : Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, CARD_HOME, false, 10);
-        Theme.text(c, "Set as Home", CARD_HOME.centerX(), CARD_HOME.centerY() + 6, 16, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Set as Home", CARD_HOME.centerX(), CARD_HOME.centerY() + 6, 18, Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, CARD_WORK, false, 10);
-        Theme.text(c, "Set as Work", CARD_WORK.centerX(), CARD_WORK.centerY() + 6, 16, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Set as Work", CARD_WORK.centerX(), CARD_WORK.centerY() + 6, 18, Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.text(c, "×", CARD_CLOSE.centerX(), CARD_CLOSE.centerY() + 10, 30, Theme.SUB, Theme.sans, Theme.CENTER);
     }
 
@@ -281,7 +305,7 @@ final class MapOverlay extends View {
 
     private static void bigButton(Canvas c, RectF r, String label) {
         Theme.button(c, r, false, 12);
-        Theme.text(c, label, r.centerX(), r.centerY() + 8, 23, Theme.TEXT, Theme.bold, Theme.CENTER);
+        Theme.text(c, label, r.centerX(), r.centerY() + 8, 24, Theme.TEXT, Theme.bold, Theme.CENTER);
     }
 
     /** North-up / heading-up switch; the needle shows where north is. */
@@ -327,10 +351,10 @@ final class MapOverlay extends View {
         if (gpsMode) return MODE_GPS.contains(x, y) ? 1 : 0;
         if (MODE.contains(x, y)) return 1;
         if (!hasMap) return 0;
-        if (nav != null && END.contains(x, y)) return 20;
-        if (nav != null && (BANNER.contains(x, y) || STRIP.contains(x, y))) return 99;   // eat it
+        if ((nav != null || pending != null) && END.contains(x, y)) return 20;
+        if (nav != null && BANNER.contains(x, y) || (nav != null || pending != null) && STRIP.contains(x, y)) return 99;   // eat it
         if (nav == null && GOTO.contains(x, y)) return 10;
-        if (pickTitle != null && nav == null) {
+        if (pickTitle != null && nav == null && pending == null) {
             if (CARD_GO.contains(x, y)) return 30;
             if (CARD_SAVE.contains(x, y)) return 34;
             if (CARD_HOME.contains(x, y)) return 31;
@@ -349,6 +373,7 @@ final class MapOverlay extends View {
         if (listener == null) return false;
         float x = Screen.x(this, e.getX()) + Screen.extra(this), y = Screen.y(this, e.getY());
         int a = e.getAction();
+        press.touch(e);
         if (talkShown() && a == MotionEvent.ACTION_DOWN && TALK.contains(x, y)) {
             holding = true;
             Talk.get(getContext()).press();

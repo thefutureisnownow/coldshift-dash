@@ -77,7 +77,8 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             gpsLostSaid = true;
             Voice.get(act).say("gps_lost");
         }
-        else if (destName != null && mode == 0) refreshOverlay();       // keeps the arrival clock current
+        else if (mode == 0 && (destName != null || act.maps().overlay() != null && act.maps().overlay().noFix != noFix()))
+            refreshOverlay();                                           // the arrival clock, and whether GPS is there
         try {
             status = lm.getGpsStatus(status);
         } catch (Throwable t) { return; }
@@ -93,6 +94,9 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
     }
 
     Location lastFix() { return last; }
+
+    /** No position yet, or none for 10 s. */
+    private boolean noFix() { return last == null || System.currentTimeMillis() - lastFixAt > 10000; }
 
     public void onFix(Location l) {
         last = l;
@@ -217,12 +221,14 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         o.pickTitle = picking ? pickName : null;
         o.pickSub = picking ? pickInfo : "";
         o.pickSaved = picking && Places.get(act).isSaved(pickLat, pickLon);
+        o.noFix = noFix();
+        o.pending = null;
         if (destName == null) {
             o.nav = null;
-            if (o.note.startsWith("Finding") || o.note.startsWith("Waiting")) o.note = "";
         } else if (nav == null) {
             o.nav = null;
-            o.note = routing ? "Finding a route to " + destName + "\u2026" : "Waiting for GPS\u2026";
+            if (o.note.startsWith("No route")) o.note = "";
+            o.pending = routing ? "Finding a route to " + destName + "\u2026" : "Waiting for GPS to go to " + destName;
         } else {
             MapOverlay.NavInfo i = new MapOverlay.NavInfo();
             if (arrivedAt != 0) {
@@ -248,7 +254,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             i.eta = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(
                 new java.util.Date(System.currentTimeMillis() + nav.remainingSeconds() * 1000L));
             o.nav = i;
-            if (o.note.startsWith("Finding") || o.note.startsWith("No route")) o.note = "";
+            if (o.note.startsWith("No route")) o.note = "";
         }
         o.postInvalidate();
     }
@@ -478,7 +484,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             Theme.text(c, err, Wide.W / 2, 330, 24, 0xffffffff, Theme.bold, Theme.CENTER);
             if (m.error.startsWith("No map"))
                 Theme.text(c, "Copy a .map file (from download.mapsforge.org) to coldshift.dash/maps/ on the SD card.",
-                    Wide.W / 2, 366, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+                    Wide.W / 2, 366, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         }
     }
 
@@ -497,14 +503,14 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         c.drawLine(CX - R, CY, CX + R, CY, p);
         c.drawLine(CX, CY - R, CX, CY + R, p);
         p.setStyle(Paint.Style.FILL);
-        Theme.text(c, "N", CX, CY - R - 8, 14, Theme.SUB, Theme.bold, Theme.CENTER);
-        Theme.text(c, "S", CX, CY + R + 22, 14, Theme.SUB, Theme.bold, Theme.CENTER);
-        Theme.text(c, "W", CX - R - 22, CY + 5, 14, Theme.SUB, Theme.bold, Theme.CENTER);
-        Theme.text(c, "E", CX + R + 22, CY + 5, 14, Theme.SUB, Theme.bold, Theme.CENTER);
-        Theme.text(c, "30\u00b0", CX, CY - R * 2 / 3 + 12, 10, Theme.SUB, Theme.bold, Theme.CENTER);
-        Theme.text(c, "60\u00b0", CX, CY - R / 3 + 12, 10, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "N", CX, CY - R - 8, 18, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "S", CX, CY + R + 22, 18, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "W", CX - R - 22, CY + 5, 18, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "E", CX + R + 22, CY + 5, 18, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "30\u00b0", CX, CY - R * 2 / 3 + 12, 18, Theme.SUB, Theme.bold, Theme.CENTER);
+        Theme.text(c, "60\u00b0", CX, CY - R / 3 + 12, 18, Theme.SUB, Theme.bold, Theme.CENTER);
         if (sats.isEmpty()) {
-            Theme.text(c, "No satellites in view yet", CX, CY + 5, 16, Theme.SUB, Theme.bold, Theme.CENTER);
+            Theme.text(c, "No satellites in view yet", CX, CY + 5, 18, Theme.SUB, Theme.bold, Theme.CENTER);
         }
         for (GpsSatellite s : sats) {
             if (s.getElevation() <= 0 && s.getAzimuth() <= 0) continue;
@@ -517,11 +523,10 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             p.setColor(col);
             c.drawCircle(x, y, 10, p);
             p.setStyle(Paint.Style.FILL);
-            Theme.text(c, String.valueOf(s.getPrn()), x, y + 4, 10, s.usedInFix() ? 0xff05070d : 0xffffffff,
+            Theme.text(c, String.valueOf(s.getPrn()), x, y + 4, 18, s.usedInFix() ? 0xff05070d : 0xffffffff,
                 Theme.bold, Theme.CENTER);
         }
-        Theme.text(c, "Solid = used in the fix. Green 30+, amber 20-30, red under 20 dB-Hz.",
-            31, 604, 12, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Solid: used in the fix. Green is 30 dB-Hz and up.", 31, 604, 18, Theme.SUB, Theme.sans, Theme.LEFT);
     }
 
     private String compass(float deg) {
@@ -538,7 +543,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
         String sub = fix ? "" : provider ? "A cold start can take a few minutes with a clear view of the sky."
             : "Turn on location in Android settings.";
         Theme.text(c, head, 499, 110, 29, 0xffffffff, Theme.bold, Theme.LEFT);
-        Theme.text(c, sub, 499, 138, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, sub, 499, 138, 18, Theme.DIM, Theme.sans, Theme.LEFT);
 
         String pos = "-", spd = "-", hdg = "-", alt = "-", acc = "-", upd = "-";
         if (last != null) {
@@ -557,11 +562,11 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             {"Last update", upd}};
         for (int i = 0; i < cells.length; i++) {
             float x = 499 + (i % 2) * (387 + Wide.d() / 2), y = 168 + (i / 2) * 54;
-            Theme.text(c, cells[i][0], x, y, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+            Theme.text(c, cells[i][0], x, y, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             Theme.text(c, Theme.fit(cells[i][1], 370, 22, Theme.bold), x, y + 24, 22, 0xffffffff, Theme.bold, Theme.LEFT);
         }
 
-        Theme.text(c, "Signal strength per satellite (dB-Hz)", 499, 392, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Signal strength per satellite (dB-Hz)", 499, 392, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         Paint p = Theme.P;
         p.setShader(null);
         p.setStyle(Paint.Style.FILL);
@@ -570,10 +575,10 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             float y = 585 - m * 3.6f;
             p.setColor(Theme.accent(0x30));
             c.drawRect(527, y, Wide.rx(1248), y + 1, p);
-            Theme.text(c, String.valueOf(m), 520, y + 4, 11, Theme.DIM, Theme.sans, Theme.RIGHT);
+            Theme.text(c, String.valueOf(m), 520, y + 4, 18, Theme.DIM, Theme.sans, Theme.RIGHT);
         }
         if (sats.isEmpty()) {
-            Theme.text(c, "Waiting for satellites\u2026", Wide.mid(527, 1248), 520, 15, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Waiting for satellites\u2026", Wide.mid(527, 1248), 520, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
         int n = Math.min(sats.size(), 16);
@@ -585,7 +590,7 @@ class MapsPage extends Page implements Gps.Listener, GpsStatus.Listener, MapOver
             RectF r = new RectF(x, top, x + bw, 585);
             p.setColor(s.usedInFix() ? snrColor(s.getSnr()) : (snrColor(s.getSnr()) & 0x00ffffff) | 0x77000000);
             c.drawRoundRect(r, 3, 3, p);
-            Theme.text(c, String.valueOf(s.getPrn()), x + bw / 2, 603, 11, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, String.valueOf(s.getPrn()), x + bw / 2, 603, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         }
     }
 }

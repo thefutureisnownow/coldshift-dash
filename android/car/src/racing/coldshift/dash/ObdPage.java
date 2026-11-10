@@ -28,12 +28,12 @@ import java.util.Locale;
  */
 class ObdPage extends Page {
     private static final int LIVE = 0, CODES = 1, LOG = 2;
-    private static final RectF FAULTS = Wide.right(new RectF(1096, 62, 1256, 102)), LOG_CHIP = Wide.right(new RectF(1030, 62, 1088, 102)),
-        BACK = Wide.right(new RectF(1146, 62, 1256, 102)), READ = Wide.right(new RectF(1010, 62, 1138, 102)),
-        RETRY = Wide.right(new RectF(1126, 106, 1256, 134)), CHOOSE = Wide.centre(new RectF(480, 330, 800, 382)),
-        CLEAR = new RectF(14, 548, 190, 592), SURE = Wide.centre(new RectF(640 - 190, 394, 640 - 10, 440)),
-        CANCEL = Wide.centre(new RectF(640 + 10, 394, 640 + 190, 440));
-    private static final float GRID_T = 140, PANEL_H = 214, GAP = 12, LIST_T = 140, LIST_B = 536, ROW = 54, TAP_SLOP = 14;
+    private static final RectF FAULTS = Wide.right(new RectF(1056, 60, 1266, 116)), LOG_CHIP = Wide.right(new RectF(966, 60, 1048, 116)),
+        BACK = Wide.right(new RectF(1146, 60, 1266, 116)), READ = Wide.right(new RectF(976, 60, 1138, 116)),
+        RETRY = Wide.right(new RectF(806, 60, 958, 116)), CHOOSE = Wide.centre(new RectF(460, 328, 820, 388)),
+        CLEAR = new RectF(14, 538, 214, 594), SURE = Wide.centre(new RectF(640 - 200, 392, 640 - 10, 448)),
+        CANCEL = Wide.centre(new RectF(640 + 10, 392, 640 + 200, 448));
+    private static final float GRID_T = 146, PANEL_H = 211, GAP = 12, LIST_T = 146, LIST_B = 536, ROW = 54, TAP_SLOP = 14;
     private static final int[] USUAL = {Obd.RPM, Obd.SPEED, Obd.COOLANT, Obd.THROTTLE, Obd.LOAD, Obd.INTAKE, Obd.TIMING, Obd.BARO};
     private static final int[] SPARE = {Obd.VOLT, Obd.FUEL, Obd.MAF, Obd.STFT, Obd.LTFT, Obd.BARO, Obd.TIMING};
     /** The second page: the mixture, the pedal and the rest. */
@@ -108,7 +108,8 @@ class ObdPage extends Page {
     // ---- live ----
 
     private void header(Canvas c, Obd o, String title) {
-        Theme.text(c, title, 24, 100, 30, 0xffffffff, Theme.bold, Theme.LEFT);
+        // the Sensors switch (Engine, Diagnostics…) is the heading; a view inside Engine names itself beside it
+        if (!title.isEmpty()) Theme.text(c, title, 660, 98, 24, 0xffffffff, Theme.bold, Theme.LEFT);
     }
 
     private int stateColour(Obd o) {
@@ -126,16 +127,16 @@ class ObdPage extends Page {
 
     /** The status line under the title, and what the adapter last complained of. */
     private void statusLine(Canvas c, Obd o) {
-        float room = RETRY.left - 24 - 16;
+        float room = Wide.W - 48;
         Theme.P.setStyle(android.graphics.Paint.Style.FILL);
         Theme.P.setColor(stateColour(o));
-        c.drawCircle(32, 118, 6, Theme.P);
-        Theme.text(c, Theme.fit(o.status(), room - 20, 16, Theme.sans), 46, 124, 16, stateColour(o) == Theme.SUB ? Theme.TEXT : stateColour(o), Theme.sans, Theme.LEFT);
+        c.drawCircle(28, 131, 6, Theme.P);
+        Theme.text(c, Theme.fit(o.status(), room - 20, 18, Theme.sans), 44, 137, 18, stateColour(o) == Theme.SUB ? Theme.TEXT : stateColour(o), Theme.sans, Theme.LEFT);
         if (canRetry(o)) Theme.chip(c, RETRY.left, RETRY.top, RETRY.right, RETRY.bottom, o.state() == Obd.IDLE ? "Try again" : "Retry now", false, 0);
     }
 
     private void live(Canvas c, Obd o) {
-        header(c, o, livePage == 0 || o.state() == Obd.NONE ? "ENGINE" : "ENGINE · MORE");
+        header(c, o, "");
         if (o.state() == Obd.NONE) {
             none(c);
             return;
@@ -167,7 +168,7 @@ class ObdPage extends Page {
         } else if (o.state() == Obd.IDLE) {
             foot = "The adapter stays powered but quiet, so the car's battery is spared. Tap Try again once the ignition is on.";
         }
-        if (!foot.isEmpty()) Theme.text(c, Theme.fit(foot, Wide.W - 48, 14, Theme.sans), Wide.W / 2, 618, 14, col, Theme.sans, Theme.CENTER);
+        if (!foot.isEmpty()) Theme.text(c, Theme.fit(foot, Wide.W - 48, 18, Theme.sans), Wide.W / 2, 618, 18, col, Theme.sans, Theme.CENTER);
     }
 
     private RectF panel(int i) {
@@ -236,12 +237,12 @@ class ObdPage extends Page {
             String sys = Float.isNaN(fs) ? "" : ObdCodec.fuelSystem((int) fs);
             if (!sys.isEmpty()) unit += "  \u00b7  " + sys;
         }
-        unit = Theme.fit(unit, r.width() - 40, 17, Theme.sans);
-        Theme.spaced(c, name, r.left + 20, r.top + 38, 13, Theme.SUB, Theme.bold, 2f);
+        unit = Theme.fit(unit, r.width() - 40, 18, Theme.sans);
+        Theme.spaced(c, name, r.left + 20, r.top + 38, 18, Theme.SUB, Theme.bold, 2f);
         int col = !has ? Theme.DIMMER : k == Obd.COOLANT && v >= 110 ? Theme.BAD : k == Obd.VOLT && v < 11.5f ? Theme.BAD
             : k == Obd.CAT && v >= 900 ? Theme.BAD : Theme.GOLD;
         Theme.text(c, text, r.left + 20, r.top + 122, text.length() > 5 ? 52 : 64, col, Theme.bold, Theme.LEFT);
-        Theme.text(c, unit, r.left + 20, r.top + 164, 17, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, unit, r.left + 20, r.top + 164, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         float full = k == Obd.RPM ? 7000 : k == Obd.THROTTLE || k == Obd.LOAD || k == Obd.FUEL || k == Obd.PEDAL ? 100 : 0;
         if (full > 0) {                                        // a bar for those that run from nothing to full
             float x0 = r.left + 20, x1 = r.right - 20, y = r.bottom - 22;
@@ -260,16 +261,16 @@ class ObdPage extends Page {
         float cx = Wide.W / 2;
         Theme.panel(c, 14, GRID_T, Wide.W - 14, 580);
         Theme.text(c, "No OBD adapter chosen", cx, 270, 30, 0xffffffff, Theme.bold, Theme.CENTER);
-        Theme.text(c, "Choose your OBD adapter in Settings, Devices.", cx, 308, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Choose your OBD adapter in Settings, Devices.", cx, 308, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         Theme.button(c, CHOOSE, true, 12);
-        Theme.text(c, "Open Settings, Devices", (CHOOSE.left + CHOOSE.right) / 2, CHOOSE.centerY() + 6, 18, 0xffffffff, Theme.sans, Theme.CENTER);
-        Theme.text(c, "The engine view connects to it by itself and shows the readings as soon as the car is on.", cx, 424, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Open Settings, Devices", (CHOOSE.left + CHOOSE.right) / 2, CHOOSE.centerY() + 7, 20, 0xffffffff, Theme.bold, Theme.CENTER);
+        Theme.text(c, "The engine view connects to it by itself and shows the readings as soon as the car is on.", cx, 424, 18, Theme.SUB, Theme.sans, Theme.CENTER);
     }
 
     // ---- fault codes ----
 
     private void codes(Canvas c, Obd o) {
-        header(c, o, "FAULT CODES");
+        header(c, o, "Fault codes");
         Theme.chip(c, BACK.left, BACK.top, BACK.right, BACK.bottom, "Back", false, 0);
         boolean busy = o.codesState() == Obd.CODES_READING || o.clearState() == Obd.CLEAR_CLEARING;
         Theme.chip(c, READ.left, READ.top, READ.right, READ.bottom, "Read again", false, busy ? Theme.DIMMER : 0);
@@ -296,7 +297,7 @@ class ObdPage extends Page {
             if (o.clearState() == Obd.CLEAR_DONE) line = "Cleared \u00b7 " + line;
             if (o.milOn()) col = Theme.GOLD;
         }
-        Theme.text(c, Theme.fit(line, READ.left - 40, 16, Theme.sans), 24, 124, 16, col, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(line, Wide.W - 48, 18, Theme.sans), 24, 137, 18, col, Theme.sans, Theme.LEFT);
 
         float right = Wide.W - 14;
         Theme.panel(c, 14, LIST_T, right, LIST_B);
@@ -306,7 +307,7 @@ class ObdPage extends Page {
         c.clipRect(16, LIST_T + 2, right - 2, LIST_B - 2);
         if (read && list.isEmpty()) {
             Theme.text(c, "No fault codes", Wide.W / 2, 330, 32, Theme.GREEN, Theme.bold, Theme.CENTER);
-            Theme.text(c, "Stored and pending, as the car reports them", Wide.W / 2, 364, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Stored and pending, as the car reports them", Wide.W / 2, 364, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         } else if (!read && list.isEmpty()) {
             Theme.text(c, o.codesState() == Obd.CODES_FAILED ? "Could not read the codes" : o.codesState() == Obd.CODES_READING ? "Reading\u2026" : "Tap Read again",
                 Wide.W / 2, 340, 24, Theme.SUB, Theme.sans, Theme.CENTER);
@@ -318,10 +319,10 @@ class ObdPage extends Page {
             if (y + ROW < LIST_T || y > LIST_B) continue;
             Obd.Code k = list.get(i);
             Theme.text(c, k.code, 36, y + 35, 26, Theme.GOLD, Theme.bold, Theme.LEFT);
-            Theme.text(c, k.pending ? "PENDING" : "STORED", 140, y + 33, 12, k.pending ? Theme.AMBER : Theme.SUB, Theme.bold, Theme.LEFT);
+            Theme.text(c, k.pending ? "PENDING" : "STORED", 140, y + 33, 18, k.pending ? Theme.AMBER : Theme.SUB, Theme.bold, Theme.LEFT);
             String words = k.describe();
-            Theme.text(c, Theme.fit(words.isEmpty() ? "No description built in: look the code up for this make" : words, right - 240 - 20, 17, Theme.sans),
-                240, y + 33, 17, words.isEmpty() ? Theme.DIM : Theme.TEXT, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit(words.isEmpty() ? "No description built in: look the code up for this make" : words, right - 240 - 20, 18, Theme.sans),
+                240, y + 33, 18, words.isEmpty() ? Theme.DIM : Theme.TEXT, Theme.sans, Theme.LEFT);
             Theme.P.setStyle(android.graphics.Paint.Style.STROKE);
             Theme.P.setStrokeWidth(1f);
             Theme.P.setColor(Theme.EDGE);
@@ -330,8 +331,8 @@ class ObdPage extends Page {
         }
         c.restore();
         Theme.chip(c, CLEAR.left, CLEAR.top, CLEAR.right, CLEAR.bottom, "Clear codes", false, o.connected() && !busy ? Theme.BAD : Theme.DIMMER);
-        Theme.text(c, "Clearing turns off the check-engine light and resets the car's readiness monitors.", CLEAR.right + 20, CLEAR.centerY() + 5, 14,
-            Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit("Turns off the check-engine light and resets the readiness monitors.", Wide.W - CLEAR.right - 40, 18, Theme.sans),
+            CLEAR.right + 20, CLEAR.centerY() + 6, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         if (confirming) confirm(c);
     }
 
@@ -347,14 +348,14 @@ class ObdPage extends Page {
         String body = "This turns off the check-engine light, erases the codes and the data stored with them, and resets the readiness monitors. "
             + "The car may fail an emissions test until it has been driven for a while. If the fault is still there, the light comes back.";
         float y = 292;
-        for (String s : wrap(body, r - l - 60, 16)) {
-            Theme.text(c, s, cx, y, 16, Theme.TEXT, Theme.sans, Theme.CENTER);
+        for (String s : wrap(body, r - l - 60, 18)) {
+            Theme.text(c, s, cx, y, 18, Theme.TEXT, Theme.sans, Theme.CENTER);
             y += 24;
         }
         Theme.button(c, SURE, false, 12);
-        Theme.text(c, "Clear codes", SURE.centerX(), SURE.centerY() + 6, 18, Theme.BAD, Theme.bold, Theme.CENTER);
+        Theme.text(c, "Clear codes", SURE.centerX(), SURE.centerY() + 7, 20, Theme.BAD, Theme.bold, Theme.CENTER);
         Theme.button(c, CANCEL, true, 12);
-        Theme.text(c, "Cancel", CANCEL.centerX(), CANCEL.centerY() + 6, 18, 0xffffffff, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Cancel", CANCEL.centerX(), CANCEL.centerY() + 7, 20, 0xffffffff, Theme.sans, Theme.CENTER);
     }
 
     private static List<String> wrap(String s, float w, float size) {
@@ -375,20 +376,20 @@ class ObdPage extends Page {
     // ---- the conversation ----
 
     private void log(Canvas c, Obd o) {
-        header(c, o, "OBD LOG");
+        header(c, o, "Adapter log");
         Theme.chip(c, BACK.left, BACK.top, BACK.right, BACK.bottom, "Back", false, 0);
-        Theme.text(c, Theme.fit(o.status() + (o.lastError().isEmpty() ? "" : " \u00b7 " + o.lastError()), BACK.left - 50, 16, Theme.sans), 24, 124, 16,
+        Theme.text(c, Theme.fit(o.status() + (o.lastError().isEmpty() ? "" : " \u00b7 " + o.lastError()), Wide.W - 48, 18, Theme.sans), 24, 137, 18,
             Theme.SUB, Theme.sans, Theme.LEFT);
         Theme.panel(c, 14, LIST_T, Wide.W - 14, 596);
         List<String> lines = o.trace();
-        int rows = 27, from = Math.max(0, lines.size() - rows);
+        int rows = 23, from = Math.max(0, lines.size() - rows);
         c.save();
         c.clipRect(18, LIST_T + 2, Wide.W - 18, 594);
         for (int i = from; i < lines.size(); i++) {
             String s = lines.get(i);
             boolean sent = s.length() > 8 && s.charAt(8) == '>';
             int col = sent ? Theme.GOLD : s.length() > 8 && s.charAt(8) == '(' ? Theme.BAD : Theme.TEXT;
-            Theme.text(c, Theme.fit(s, Wide.W - 70, 13, MONO), 30, LIST_T + 22 + (i - from) * 16.5f, 13, col, MONO, Theme.LEFT);
+            Theme.text(c, Theme.fit(s, Wide.W - 70, 16, MONO), 30, LIST_T + 22 + (i - from) * 19f, 16, col, MONO, Theme.LEFT);
         }
         c.restore();
     }

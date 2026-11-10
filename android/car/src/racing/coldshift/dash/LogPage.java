@@ -26,8 +26,8 @@ class LogPage extends Page implements Logbook.Listener {
     private static final RectF LOG_PENDING = new RectF(38, 474, 290, 524), NO_PENDING = new RectF(302, 474, 536, 524);
     private static final RectF ADD_FUEL = new RectF(30, 553, 250, 607), ADD_ODO = new RectF(262, 553, 400, 607);
     private static final RectF ADD_SERVICE = new RectF(412, 553, 544, 607);
-    private static final RectF[] FILTERS = {Wide.right(new RectF(950, 80, 1040, 116)),
-        Wide.right(new RectF(1048, 80, 1138, 116)), Wide.right(new RectF(1146, 80, 1250, 116))};
+    private static final RectF[] FILTERS = {Wide.right(new RectF(922, 74, 1026, 124)),
+        Wide.right(new RectF(1034, 74, 1138, 124)), Wide.right(new RectF(1146, 74, 1250, 124))};
     private static final String[] FILTER_NAMES = {"All", "Trips", "Fuel"};
     private static final RectF NEWER = new RectF(598, 553, 790, 607), OLDER = Wide.right(new RectF(1058, 553, 1250, 607));
     private static final RectF BACK = new RectF(598, 553, 790, 607), DELETE = new RectF(802, 553, 998, 607);
@@ -156,15 +156,15 @@ class LogPage extends Page implements Logbook.Listener {
     }
 
     private void summary(Canvas c) {
-        Theme.spaced(c, "ODOMETER", 38, 104, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "ODOMETER", 38, 104, 18, Theme.SUB, Theme.bold, 2f);
         if (Double.isNaN(odoNow)) {
             Theme.text(c, "Tap to enter", 38, 164, 36, 0xffffffff, Theme.bold, Theme.LEFT);
-            Theme.text(c, "Type the odometer reading once; trips keep it up to date.", 38, 196, 15, Theme.SUB,
+            Theme.text(c, "Type the odometer reading once; trips keep it up to date.", 38, 196, 18, Theme.SUB,
                 Theme.sans, Theme.LEFT);
         } else {
             Theme.text(c, km(odoNow), 38, 168, 54, 0xffffffff, Theme.bold, Theme.LEFT);
             Theme.text(c, "estimated from the reading on " + new SimpleDateFormat("d MMM", Locale.US).format(new Date(readingAt))
-                + " and trips since · tap to correct", 38, 198, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+                + " and trips since · tap to correct", 38, 198, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
         String[][] rows = {
             {"Fuel use, last tank", Double.isNaN(lastL100) ? "-" : String.format(Locale.US, "%.1f L/100 km", lastL100)},
@@ -174,8 +174,8 @@ class LogPage extends Page implements Logbook.Listener {
             {"Trip under way", book.tripMetres() > 0 ? String.format(Locale.US, "%.1f km", book.tripMetres() * factor / 1000) : "-"}};
         for (int i = 0; i < rows.length; i++) {
             float y = 252 + i * 38;
-            Theme.text(c, rows[i][0], 38, y, 16, Theme.SUB, Theme.sans, Theme.LEFT);
-            Theme.text(c, rows[i][1], 536, y, 19, 0xffffffff, Theme.bold, Theme.RIGHT);
+            Theme.text(c, rows[i][0], 38, y, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, rows[i][1], 536, y, 20, 0xffffffff, Theme.bold, Theme.RIGHT);
         }
         if (pending != null) {
             Theme.P.setShader(null);
@@ -184,26 +184,26 @@ class LogPage extends Page implements Logbook.Listener {
             Theme.text(c, Theme.fit("Filled up at " + pending.optString("station") + "?", 500, 20, Theme.bold), 38, 448, 20,
                 Theme.GOLD, Theme.bold, Theme.LEFT);
             Theme.text(c, "Stopped " + Math.round(pending.optLong("stood") / 60000.0) + " min at "
-                + new SimpleDateFormat("HH:mm", Locale.US).format(new Date(pending.optLong("time"))), 536, 448, 15,
+                + new SimpleDateFormat("HH:mm", Locale.US).format(new Date(pending.optLong("time"))), 536, 448, 18,
                 Theme.SUB, Theme.sans, Theme.RIGHT);
             Theme.button(c, LOG_PENDING, true, 10);
-            Theme.text(c, "Log fill-up", LOG_PENDING.centerX(), LOG_PENDING.centerY() + 7, 19, 0xffffffff, Theme.bold, Theme.CENTER);
+            Theme.text(c, "Log fill-up", LOG_PENDING.centerX(), LOG_PENDING.centerY() + 7, 20, 0xffffffff, Theme.bold, Theme.CENTER);
             Theme.button(c, NO_PENDING, false, 10);
             Theme.text(c, "Not a fill-up", NO_PENDING.centerX(), NO_PENDING.centerY() + 7, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         }
         Theme.button(c, ADD_FUEL, true, 12);
-        Theme.text(c, "Add fill-up", ADD_FUEL.centerX(), ADD_FUEL.centerY() + 8, 21, 0xffffffff, Theme.bold, Theme.CENTER);
+        Theme.text(c, "Add fill-up", ADD_FUEL.centerX(), ADD_FUEL.centerY() + 8, 22, 0xffffffff, Theme.bold, Theme.CENTER);
         Theme.button(c, ADD_ODO, false, 12);
-        Theme.text(c, "Odometer", ADD_ODO.centerX(), ADD_ODO.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Odometer", ADD_ODO.centerX(), ADD_ODO.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, ADD_SERVICE, false, 12);
-        Theme.text(c, "Service", ADD_SERVICE.centerX(), ADD_SERVICE.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Service", ADD_SERVICE.centerX(), ADD_SERVICE.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
     }
 
     private void list(Canvas c) {
         Theme.text(c, "Log", 598, 106, 24, 0xffffffff, Theme.bold, Theme.LEFT);
         for (int i = 0; i < FILTERS.length; i++) {
             Theme.button(c, FILTERS[i], i == filter, 10);
-            Theme.text(c, FILTER_NAMES[i], FILTERS[i].centerX(), FILTERS[i].centerY() + 6, 17,
+            Theme.text(c, FILTER_NAMES[i], FILTERS[i].centerX(), FILTERS[i].centerY() + 7, 20,
                 i == filter ? 0xffffffff : Theme.SUB, Theme.sans, Theme.CENTER);
         }
         SimpleDateFormat when = new SimpleDateFormat("EEE d MMM  HH:mm", Locale.US);
@@ -238,13 +238,13 @@ class LogPage extends Page implements Logbook.Listener {
                 rightCol = Theme.SUB;
             }
             if (!t.equals("trip") && o.optDouble("odometer", 0) > 0 && !t.equals("odometer")) sub += " · " + km(o.optDouble("odometer"));
-            float rw = Theme.width(right, 19, Theme.bold);
+            float rw = Theme.width(right, 20, Theme.bold);
             boolean biz = t.equals("trip") && o.optBoolean("business");
-            Theme.text(c, Theme.fit(title, 620 + Wide.d() - rw - (biz ? 90 : 0), 19, Theme.bold), 606, r.top + 25, 19, 0xffffffff,
+            Theme.text(c, Theme.fit(title, 620 + Wide.d() - rw - (biz ? 90 : 0), 20, Theme.bold), 606, r.top + 25, 20, 0xffffffff,
                 Theme.bold, Theme.LEFT);
-            Theme.text(c, Theme.fit(sub, 610 + Wide.d(), 15, Theme.sans), 606, r.top + 48, 15, Theme.SUB, Theme.sans, Theme.LEFT);
-            Theme.text(c, right, Wide.rx(1234), r.top + 26, 19, rightCol, Theme.bold, Theme.RIGHT);
-            if (biz) Theme.spaced(c, "BUSINESS", Wide.rx(1234) - rw - 92, r.top + 25, 12, Theme.GOLD, Theme.bold, 1.5f);
+            Theme.text(c, Theme.fit(sub, 610 + Wide.d(), 18, Theme.sans), 606, r.top + 48, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, right, Wide.rx(1234), r.top + 26, 20, rightCol, Theme.bold, Theme.RIGHT);
+            if (biz) Theme.spaced(c, "BUSINESS", Wide.rx(1234) - rw - 92, r.top + 25, 18, Theme.GOLD, Theme.bold, 1.5f);
         }
         if (shown.isEmpty()) {
             String[] lines = {
@@ -259,15 +259,15 @@ class LogPage extends Page implements Logbook.Listener {
         }
         if (first > 0) {
             Theme.button(c, NEWER, false, 12);
-            Theme.text(c, "Newer", NEWER.centerX(), NEWER.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Newer", NEWER.centerX(), NEWER.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         }
         if (first + ROWS < shown.size()) {
             Theme.button(c, OLDER, false, 12);
-            Theme.text(c, "Older", OLDER.centerX(), OLDER.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Older", OLDER.centerX(), OLDER.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         }
         if (!shown.isEmpty()) Theme.text(c, (first + 1) + "–" + Math.min(first + ROWS, shown.size()) + " of " + shown.size(),
-            Wide.mid(790, 1058), 587, 16, Theme.SUB, Theme.sans, Theme.CENTER);
-        if (!note.isEmpty()) Theme.text(c, note, 598, 540, 16, Theme.GOLD, Theme.bold, Theme.LEFT);
+            Wide.mid(790, 1058), 587, 18, Theme.SUB, Theme.sans, Theme.CENTER);
+        if (!note.isEmpty()) Theme.text(c, note, 598, 540, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
     }
 
     private void drawDue(Canvas c, RectF r, LogStore.Due d) {
@@ -277,17 +277,17 @@ class LogPage extends Page implements Logbook.Listener {
         Theme.P.setColor((col & 0xffffff) | 0x26000000);
         c.drawRoundRect(r, 10, 10, Theme.P);
         String right = d.when();
-        float rw = Theme.width(right, 19, Theme.bold);
-        Theme.text(c, Theme.fit(d.what + (d.overdue ? " overdue" : " due"), 620 + Wide.d() - rw, 19, Theme.bold), 606, r.top + 25, 19,
+        float rw = Theme.width(right, 20, Theme.bold);
+        Theme.text(c, Theme.fit(d.what + (d.overdue ? " overdue" : " due"), 620 + Wide.d() - rw, 20, Theme.bold), 606, r.top + 25, 20,
             col, Theme.bold, Theme.LEFT);
         String every = "every" + (rem.optDouble("every_km", 0) > 0 ? " " + km(rem.optDouble("every_km")) : "")
             + (rem.optDouble("every_km", 0) > 0 && rem.optInt("every_months", 0) > 0 ? " or" : "")
             + (rem.optInt("every_months", 0) > 0 ? " " + rem.optInt("every_months") + " months" : "");
         String last = "last " + new SimpleDateFormat("d MMM yyyy", Locale.US).format(new Date(d.lastTime))
             + (Double.isNaN(d.lastOdo) || d.lastOdo <= 0 || rem.optDouble("every_km", 0) <= 0 ? "" : " at " + km(d.lastOdo));
-        Theme.text(c, Theme.fit(every + " · " + last + " · tap when done", 610 + Wide.d(), 15, Theme.sans), 606, r.top + 48, 15,
+        Theme.text(c, Theme.fit(every + " · " + last + " · tap when done", 610 + Wide.d(), 18, Theme.sans), 606, r.top + 48, 18,
             Theme.SUB, Theme.sans, Theme.LEFT);
-        Theme.text(c, right, Wide.rx(1234), r.top + 26, 19, col, Theme.bold, Theme.RIGHT);
+        Theme.text(c, right, Wide.rx(1234), r.top + 26, 20, col, Theme.bold, Theme.RIGHT);
     }
 
     private void trip(Canvas c) {
@@ -297,29 +297,29 @@ class LogPage extends Page implements Logbook.Listener {
         long start = o.optLong("time"), end = o.optLong("end");
         Theme.text(c, new SimpleDateFormat("EEE d MMM yyyy  HH:mm", Locale.US).format(new Date(start)) + " – "
             + new SimpleDateFormat("HH:mm", Locale.US).format(new Date(end)) + " · " + Math.max(1, (end - start) / 60000) + " min",
-            598, 142, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+            598, 142, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         Theme.text(c, String.format(Locale.US, "%.1f km", o.optDouble("dist_m", 0) * factor / 1000), 598, 214, 52,
             0xffffffff, Theme.bold, Theme.LEFT);
         String more = "top speed " + Math.round(o.optDouble("max", 0) * 3.6) + " km/h";
         if (o.has("odo_start")) more += " · odometer about " + km(o.optDouble("odo_start")) + " to " + km(o.optDouble("odo_end"));
-        Theme.text(c, more, 598, 250, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, more, 598, 250, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         boolean biz = o.optBoolean("business");
         Theme.button(c, BUSINESS, biz, 12);
-        Theme.text(c, "Business", BUSINESS.centerX(), BUSINESS.centerY() + 8, 21, biz ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
+        Theme.text(c, "Business", BUSINESS.centerX(), BUSINESS.centerY() + 8, 22, biz ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
         Theme.button(c, PRIVATE, !biz, 12);
-        Theme.text(c, "Private", PRIVATE.centerX(), PRIVATE.centerY() + 8, 21, !biz ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
+        Theme.text(c, "Private", PRIVATE.centerX(), PRIVATE.centerY() + 8, 22, !biz ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
         if (biz) {
             String p = o.optString("purpose");
-            Theme.text(c, "Where to and why, for SARS:", 598, 400, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "Where to and why, for SARS:", 598, 400, 18, Theme.SUB, Theme.sans, Theme.LEFT);
             Theme.button(c, PURPOSE, false, 12);
-            Theme.text(c, Theme.fit(p.isEmpty() ? "Tap to give the purpose" : p, 610 + Wide.d(), 21, Theme.bold), 618, PURPOSE.centerY() + 8,
-                21, p.isEmpty() ? Theme.GOLD : 0xffffffff, Theme.bold, Theme.LEFT);
+            Theme.text(c, Theme.fit(p.isEmpty() ? "Tap to give the purpose" : p, 610 + Wide.d(), 22, Theme.bold), 618, PURPOSE.centerY() + 8,
+                22, p.isEmpty() ? Theme.GOLD : 0xffffffff, Theme.bold, Theme.LEFT);
         } else {
-            Theme.text(c, "Private trips (and driving to and from work) count as private use.", 598, 400, 17, Theme.SUB,
+            Theme.text(c, "Private trips (and driving to and from work) count as private use.", 598, 400, 18, Theme.SUB,
                 Theme.sans, Theme.LEFT);
         }
         Theme.button(c, BACK, false, 12);
-        Theme.text(c, "Back", BACK.centerX(), BACK.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Back", BACK.centerX(), BACK.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         deleteButton(c);
     }
 
@@ -334,7 +334,7 @@ class LogPage extends Page implements Logbook.Listener {
     private void fieldRow(Canvas c, int i, String label, String value, boolean worked) {
         RectF r = field(i);
         Theme.button(c, r, false, 10);
-        Theme.text(c, label, r.left + 18, r.centerY() + 7, 19, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, label, r.left + 18, r.centerY() + 7, 20, Theme.SUB, Theme.sans, Theme.LEFT);
         Theme.text(c, value + (worked ? "  (worked out)" : ""), r.right - 18, r.centerY() + 8, 22,
             worked ? Theme.SUB : 0xffffffff, Theme.bold, Theme.RIGHT);
     }
@@ -356,14 +356,14 @@ class LogPage extends Page implements Logbook.Listener {
             for (int i = 0; i < LogStore.GRADES.length; i++) {
                 RectF r = gradeRect(i, w);
                 Theme.button(c, r, LogStore.GRADES[i].equals(grade), 10);
-                Theme.text(c, LogStore.GRADES[i], r.centerX(), r.centerY() + 7, 19,
+                Theme.text(c, LogStore.GRADES[i], r.centerX(), r.centerY() + 7, 20,
                     LogStore.GRADES[i].equals(grade) ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
             }
             Theme.button(c, FULL, full, 10);
-            Theme.text(c, full ? "Filled to full" : "Part fill", FULL.centerX(), FULL.centerY() + 7, 19,
+            Theme.text(c, full ? "Filled to full" : "Part fill", FULL.centerX(), FULL.centerY() + 7, 20,
                 full ? 0xffffffff : Theme.TEXT, Theme.bold, Theme.CENTER);
             Theme.button(c, MISSED, missed, 10);
-            Theme.text(c, "Missed logging one before", MISSED.centerX(), MISSED.centerY() + 7, 17,
+            Theme.text(c, "Missed logging one before", MISSED.centerX(), MISSED.centerY() + 7, 18,
                 missed ? 0xffffffff : Theme.SUB, Theme.sans, Theme.CENTER);
         } else if (t.equals("service")) {
             fieldRow(c, 0, "What", what.isEmpty() ? "-" : what, false);
@@ -371,12 +371,12 @@ class LogPage extends Page implements Logbook.Listener {
             fieldRow(c, 2, "Odometer", Double.isNaN(odometer) ? "-" : km(odometer) + (odoTyped ? "" : " (estimate)"), false);
         } else {
             fieldRow(c, 0, "Odometer", Double.isNaN(odometer) ? "-" : km(odometer) + (odoTyped ? "" : " (estimate)"), false);
-            Theme.text(c, "Read it off the dashboard. Trips keep it up to date in between.", 598, 230, 17, Theme.SUB,
+            Theme.text(c, "Read it off the dashboard. Trips keep it up to date in between.", 598, 230, 18, Theme.SUB,
                 Theme.sans, Theme.LEFT);
         }
-        if (!note.isEmpty()) Theme.text(c, note, 598, 535, 16, Theme.GOLD, Theme.bold, Theme.LEFT);
+        if (!note.isEmpty()) Theme.text(c, note, 598, 535, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
         Theme.button(c, BACK, false, 12);
-        Theme.text(c, "Cancel", BACK.centerX(), BACK.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Cancel", BACK.centerX(), BACK.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         if (!formNew) deleteButton(c);
         Theme.button(c, SAVE, true, 12);
         Theme.text(c, "Save", SAVE.centerX(), SAVE.centerY() + 8, 22, 0xffffffff, Theme.bold, Theme.CENTER);

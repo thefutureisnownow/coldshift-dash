@@ -184,7 +184,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
                 "With no internet, host it on this phone: the others join its hotspot",
                 "(or the same Wi-Fi) and find it under Convoys nearby."};
             for (int i = 0; i < lines.length; i++)
-                Theme.text(c, lines[i], 510, 160 + i * 28, 19, Theme.TEXT, Theme.sans, Theme.LEFT);
+                Theme.text(c, lines[i], 510, 160 + i * 28, 20, Theme.TEXT, Theme.sans, Theme.LEFT);
         }
         Theme.button(c, START, true, 12);
         Theme.text(c, busy ? "…" : "Start a convoy", START.centerX(), START.centerY() + 9, 22, 0xffffffff, Theme.bold, Theme.CENTER);
@@ -194,7 +194,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         Theme.button(c, SCAN, false, 12);
         Theme.text(c, "Scan to join", SCAN.centerX(), SCAN.centerY() + 9, 22, Theme.TEXT, Theme.bold, Theme.CENTER);
         hostLine(c, 510, 456);
-        if (!note.isEmpty()) Theme.text(c, Theme.fit(note, 740 + Wide.d(), 17, Theme.bold), 510, 590, 17, noteOk ? Theme.GREEN : Theme.BAD,
+        if (!note.isEmpty()) Theme.text(c, Theme.fit(note, 740 + Wide.d(), 18, Theme.bold), 510, 590, 18, noteOk ? Theme.GREEN : Theme.BAD,
             Theme.bold, Theme.LEFT);
         Bitmap car = Profile.carBody(act);
         if (car != null) {
@@ -206,7 +206,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
     /** The convoys found nearby, to tap; a host with none is offered to start one on. */
     private void foundList(Canvas c) {
         if (found.isEmpty() && foundHosts.isEmpty()) {
-            Theme.text(c, "No convoy nearby. The host phone must be on this Wi-Fi, or this phone on its hotspot.", 510, 170, 17,
+            Theme.text(c, "No convoy nearby. The host phone must be on this Wi-Fi, or this phone on its hotspot.", 510, 170, 18,
                 Theme.SUB, Theme.sans, Theme.LEFT);
             return;
         }
@@ -217,7 +217,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             Theme.button(c, r, false, 10);
             Theme.text(c, Theme.fit(f.name, 300 + Wide.d(), 20, Theme.bold), r.left + 18, r.top + 26, 20, 0xffffffff, Theme.bold, Theme.LEFT);
             Theme.text(c, "on " + f.host.name + " · " + f.cars + (f.cars == 1 ? " car" : " cars") + (f.locked ? " · password" : ""),
-                r.left + 18, r.top + 47, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+                r.left + 18, r.top + 47, 18, Theme.SUB, Theme.sans, Theme.LEFT);
             Theme.text(c, "Join", r.right - 18, r.centerY() + 7, 20, Theme.BLUE_HI, Theme.bold, Theme.RIGHT);
         }
         for (int i = 0; i < foundHosts.size() && row < FOUND_ROWS; i++) {
@@ -226,7 +226,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             RectF r = foundRow(row++);
             Theme.button(c, r, false, 10);
             Theme.text(c, Theme.fit(h.name, 300 + Wide.d(), 20, Theme.bold), r.left + 18, r.top + 26, 20, 0xffffffff, Theme.bold, Theme.LEFT);
-            Theme.text(c, "a convoy host with no convoy yet", r.left + 18, r.top + 47, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "a convoy host with no convoy yet", r.left + 18, r.top + 47, 18, Theme.SUB, Theme.sans, Theme.LEFT);
             Theme.text(c, "Use it", r.right - 18, r.centerY() + 7, 20, Theme.BLUE_HI, Theme.bold, Theme.RIGHT);
         }
     }
@@ -240,17 +240,17 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
     private void hostLine(Canvas c, float x, float y) {
         String host = convoy.server();
         boolean here = convoy.hosting();
-        Theme.text(c, "Convoy host", x, y, 15, Theme.SUB, Theme.bold, Theme.LEFT);
+        Theme.text(c, "Convoy host", x, y, 18, Theme.SUB, Theme.bold, Theme.LEFT);
         Theme.text(c, here ? "This phone" : Theme.fit(host.isEmpty() ? "none yet: choose one" : host.replaceFirst("^https?://", ""),
             220, 18, Theme.bold), x, y + 28, 18, host.isEmpty() ? Theme.GOLD : 0xffffffff, Theme.bold, Theme.LEFT);
         if (here) {
-            Theme.text(c, "No internet needed: the others join this", x, y + 56, 15, Theme.SUB, Theme.sans, Theme.LEFT);
-            Theme.text(c, "phone's hotspot or Wi-Fi and find it nearby.", x, y + 76, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "No internet needed: the others join this", x, y + 56, 18, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "phone's hotspot or Wi-Fi and find it nearby.", x, y + 76, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
         Theme.button(c, HOST, false, 12);
-        Theme.text(c, "Change host", HOST.centerX(), HOST.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Change host", HOST.centerX(), HOST.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, HERE, here, 12);
-        Theme.text(c, here ? "Hosting here" : "Host on this phone", HERE.centerX(), HERE.centerY() + 7, 19,
+        Theme.text(c, here ? "Hosting here" : "Host on this phone", HERE.centerX(), HERE.centerY() + 7, 20,
             here ? 0xffffffff : Theme.TEXT, here ? Theme.bold : Theme.sans, Theme.CENTER);
     }
 
@@ -259,7 +259,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             0xffffffff, Theme.bold, Theme.LEFT);
         boolean on = convoy.connected();
         Theme.text(c, Theme.fit((on ? "Connected" : convoy.error().isEmpty() ? "Connecting…" : convoy.error()) + " · "
-            + (convoy.hosting() ? "hosted on this phone" : convoy.server().replaceFirst("^https?://", "")), 500, 16, Theme.sans), 34, 136, 16, on ? Theme.GREEN : Theme.GOLD,
+            + (convoy.hosting() ? "hosted on this phone" : convoy.server().replaceFirst("^https?://", "")), 500, 18, Theme.sans), 34, 136, 18, on ? Theme.GREEN : Theme.GOLD,
             Theme.sans, Theme.LEFT);
         String refused = convoy.refused();
         boolean out = refused.equals("password") || refused.equals("ended") || refused.equals("full");
@@ -268,24 +268,24 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         Bitmap qr = convoy.qr();
         if (convoy.local() && !out) {
             // found nearby, not scanned: a QR code's address may not be one the others can reach
-            Theme.text(c, convoy.hosting() ? "No internet needed: the others join this phone's Wi-Fi or hotspot." : "On a host nearby.", 34, 172, 15,
+            Theme.text(c, convoy.hosting() ? "No internet needed: the others join this phone's Wi-Fi or hotspot." : "On a host nearby.", 34, 172, 18,
                 Theme.SUB, Theme.sans, Theme.LEFT);
             Theme.text(c, Theme.fit("Others: Convoy, Convoys nearby" + (convoy.locked() ? " · password: " + convoy.password() : ""),
-                500, 15, Theme.sans), 34, 196, 15, convoy.locked() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
+                500, 18, Theme.sans), 34, 196, 18, convoy.locked() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
         } else if (qr != null && !out) {
             c.drawBitmap(qr, null, QR, null);
-            Theme.text(c, convoy.locked() ? "Password protected" : "No password: the QR code is enough", 34, 172, 15,
+            Theme.text(c, convoy.locked() ? "Password protected" : "No password: the QR code is enough", 34, 172, 18,
                 convoy.locked() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
-            Theme.text(c, "Tap the QR code to show it large", 34, 196, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "Tap the QR code to show it large", 34, 196, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
         if (out) {
             if (refused.equals("password")) {
                 Theme.button(c, PASSWORD, true, 12);
-                Theme.text(c, "Type the password", PASSWORD.centerX(), PASSWORD.centerY() + 8, 21, 0xffffffff, Theme.bold,
+                Theme.text(c, "Type the password", PASSWORD.centerX(), PASSWORD.centerY() + 8, 22, 0xffffffff, Theme.bold,
                     Theme.CENTER);
             }
             if (!refused.equals("password"))
-                Theme.text(c, "Leave, then start a convoy or scan another.", 34, 250, 17, Theme.TEXT, Theme.sans, Theme.LEFT);
+                Theme.text(c, "Leave, then start a convoy or scan another.", 34, 250, 18, Theme.TEXT, Theme.sans, Theme.LEFT);
             leaveAndMap(c);
             return;
         }
@@ -309,11 +309,11 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
                 c.drawBitmap(car, null, new RectF(r.left + 44 - w / 2, r.centerY() - h / 2, r.left + 44 + w / 2,
                     r.centerY() + h / 2), Theme.BMP);
             }
-            Theme.text(c, Theme.fit(me ? convoy.carName() : m.name, 330, 19, Theme.bold), r.left + 74, r.top + 25, 19, 0xffffffff,
+            Theme.text(c, Theme.fit(me ? convoy.carName() : m.name, 330, 20, Theme.bold), r.left + 74, r.top + 25, 20, 0xffffffff,
                 Theme.bold, Theme.LEFT);
-            Theme.text(c, me ? (convoy.hosting() ? "you · hosting the convoy" : "you") : where(m, here), r.left + 74, r.top + 47, 15,
+            Theme.text(c, me ? (convoy.hosting() ? "you · hosting the convoy" : "you") : where(m, here), r.left + 74, r.top + 47, 18,
                 me || picked ? 0xffffffff : Theme.SUB, Theme.sans, Theme.LEFT);
-            if (picked) Theme.text(c, "Private", r.right - 14, r.top + 20, 14, 0xffe9dcff, Theme.bold, Theme.RIGHT);
+            if (picked) Theme.text(c, "Private", r.right - 14, r.top + 20, 16, 0xffe9dcff, Theme.bold, Theme.RIGHT);
             double speed = me ? (here != null ? here.getSpeed() : Double.NaN) : Double.isNaN(m.lat) ? Double.NaN : m.speed;
             if (!Double.isNaN(speed) && "vehicle".equals(m.role))
                 Theme.text(c, Math.round(speed * 3.6) + " km/h", r.right - 14, r.top + (picked ? 42 : 36), 18, Theme.TEXT, Theme.bold, Theme.RIGHT);
@@ -321,15 +321,15 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         // how to choose one, or that one is
         if (cars.size() > 1)
             Theme.text(c, Theme.fit(chosen.isEmpty() ? "Tap a car to message it privately" : "Private to " + recipientName()
-                + " · tap it again for everyone", 510, 13, Theme.bold), 34, MEMBERS_TOP - 8, 13, chosen.isEmpty() ? Theme.SUB : PRIVATE,
+                + " · tap it again for everyone", 510, 16, Theme.bold), 34, MEMBERS_TOP - 8, 16, chosen.isEmpty() ? Theme.SUB : PRIVATE,
                 chosen.isEmpty() ? Theme.sans : Theme.bold, Theme.LEFT);
         int below = cars.size() - memberScroll - MEMBER_ROWS;
         if (memberScroll > 0 || below > 0)
             Theme.text(c, (memberScroll > 0 ? memberScroll + " above" : "") + (memberScroll > 0 && below > 0 ? " · " : "")
-                + (below > 0 ? below + " below" : "") + ": drag the list", 548, MEMBERS_TOP - 8, 13, Theme.SUB, Theme.sans, Theme.RIGHT);
+                + (below > 0 ? below + " below" : "") + ": drag the list", 548, MEMBERS_TOP - 8, 16, Theme.SUB, Theme.sans, Theme.RIGHT);
         if (cars.size() <= 1) {
             Theme.text(c, convoy.local() ? "Nobody else yet: they find it under Convoys nearby." : "Nobody else yet: let them scan the QR code.",
-                34, MEMBERS_TOP + MEMBER_H + 24, 17, Theme.SUB, Theme.sans,     // under this car's own row
+                34, MEMBERS_TOP + MEMBER_H + 24, 18, Theme.SUB, Theme.sans,     // under this car's own row
                 Theme.LEFT);
         }
         leaveAndMap(c);
@@ -339,10 +339,10 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         Theme.button(c, LEAVE, false, 12);
         boolean ends = convoy.hosting() && convoy.starter();       // the relay goes with this phone
         Theme.text(c, confirmLeave ? (ends ? "Tap: ends for all" : "Tap again") : ends ? "End convoy" : "Leave", LEAVE.centerX(),
-            LEAVE.centerY() + 7, 19,
+            LEAVE.centerY() + 7, 20,
             confirmLeave ? Theme.BAD : Theme.TEXT, Theme.sans, Theme.CENTER);
         Theme.button(c, MAP, false, 12);
-        Theme.text(c, "Show on the map", MAP.centerX(), MAP.centerY() + 7, 19, Theme.TEXT, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Show on the map", MAP.centerX(), MAP.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
     }
 
     /** The QR code large, for scanning from another car's phone. */
@@ -363,16 +363,16 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             "",
             "In a browser, the same link follows the convoy:"};
         for (int i = 0; i < lines.length; i++)
-            Theme.text(c, lines[i], 630, 200 + i * 30, 19, i == 3 && !convoy.locked() ? Theme.GOLD : Theme.TEXT, Theme.sans,
+            Theme.text(c, lines[i], 630, 200 + i * 30, 20, i == 3 && !convoy.locked() ? Theme.GOLD : Theme.TEXT, Theme.sans,
                 Theme.LEFT);
-        Theme.text(c, Theme.fit(convoy.link(), 610, 16, Theme.sans), 630, 380, 16, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(convoy.link(), 610, 18, Theme.sans), 630, 380, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         if (convoy.starter()) {
             Theme.button(c, END, false, 12);
             Theme.text(c, confirmEnd ? "Tap again: everyone leaves" : "End the convoy for everyone", END.centerX(),
                 END.centerY() + 7, 18, Theme.BAD, Theme.bold, Theme.CENTER);
-            Theme.text(c, "Tap elsewhere to close", 630, 606, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "Tap elsewhere to close", 630, 606, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         } else {
-            Theme.text(c, "Tap anywhere to close", 630, 590, 16, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, "Tap anywhere to close", 630, 590, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         }
     }
 
@@ -590,8 +590,8 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             y = top - 10 * s;
         }
         String who = priv ? recipientName() : "";
-        if (ms.isEmpty()) Theme.text(c, priv ? Theme.fit("No messages yet. Tap one below to send it to " + who + " only.", 640 + Wide.d(), 17,
-            Theme.sans) : "No messages yet. Tap one below to send it.", 598, 150, 17, priv ? PRIVATE : Theme.SUB, Theme.sans, Theme.LEFT);
+        if (ms.isEmpty()) Theme.text(c, priv ? Theme.fit("No messages yet. Tap one below to send it to " + who + " only.", 640 + Wide.d(), 18,
+            Theme.sans) : "No messages yet. Tap one below to send it.", 598, 150, 18, priv ? PRIVATE : Theme.SUB, Theme.sans, Theme.LEFT);
         for (int i = 0; i < QUICK.length; i++) {
             RectF r = quick(i);
             if (priv) privateButton(c, r, false, 10);
@@ -603,8 +603,8 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         if (priv && !latched) privateButton(c, TYPE, true, 12);
         else Theme.button(c, TYPE, false, 12);
         String typeLabel = "Type a message…";
-        if (priv) typeLabel = "Message " + Theme.fit(who, TYPE.width() - 28 - Theme.width("Message ", 21, Theme.bold), 21, Theme.bold);
-        Theme.text(c, latched ? "Cancel" : typeLabel, TYPE.centerX(), TYPE.centerY() + 8, 21, latched ? Theme.BAD : priv ? 0xffffffff : Theme.TEXT,
+        if (priv) typeLabel = "Message " + Theme.fit(who, TYPE.width() - 28 - Theme.width("Message ", 22, Theme.bold), 22, Theme.bold);
+        Theme.text(c, latched ? "Cancel" : typeLabel, TYPE.centerX(), TYPE.centerY() + 8, 22, latched ? Theme.BAD : priv ? 0xffffffff : Theme.TEXT,
             Theme.bold, Theme.CENTER);
         String tn = Talk.get(act).takeNote();
         if (!tn.isEmpty()) {
@@ -612,7 +612,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             talkNoteUntil = System.currentTimeMillis() + 6000;
         }
         String n = !note.isEmpty() ? note : System.currentTimeMillis() < talkNoteUntil ? talkNote : "";
-        if (!n.isEmpty()) Theme.text(c, Theme.fit(n, 640 + Wide.d(), 15, Theme.bold), 598, 140, 15, Theme.BAD, Theme.bold, Theme.LEFT);
+        if (!n.isEmpty()) Theme.text(c, Theme.fit(n, 640 + Wide.d(), 18, Theme.bold), 598, 140, 18, Theme.BAD, Theme.bold, Theme.LEFT);
     }
 
     /**
@@ -645,18 +645,18 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
             }
             int ink = 0xff070e1b;
             if (small) {
-                if (priv) Theme.text(c, Theme.fit("to " + rn, r.width() - 24, 14, Theme.bold), r.centerX(), r.top + 24, 14, ink, Theme.bold,
+                if (priv) Theme.text(c, Theme.fit("to " + rn, r.width() - 24, 16, Theme.bold), r.centerX(), r.top + 24, 16, ink, Theme.bold,
                     Theme.CENTER);
                 Theme.text(c, t.latched() ? "Tap to send" : "Let go", r.centerX(), r.centerY() + (priv ? 2 : -4), 20, ink, Theme.bold,
                     Theme.CENTER);
-                Theme.text(c, t.clock(), r.centerX(), r.centerY() + (priv ? 26 : 22), 16, ink, Theme.bold, Theme.CENTER);
+                Theme.text(c, t.clock(), r.centerX(), r.centerY() + (priv ? 26 : 22), 18, ink, Theme.bold, Theme.CENTER);
             } else {
                 Theme.P.setColor(0xffd0021b);
                 if (System.currentTimeMillis() / 500 % 2 == 0) c.drawCircle(r.left + 24, r.centerY(), 7, Theme.P);
                 if (priv) {          // two lines: who, then the clock
                     Theme.text(c, Theme.fit((t.latched() ? "Tap to send to " : "Let go to send to ") + rn, r.width() - 64, 18, Theme.bold),
                         r.centerX() + 10, r.centerY() - 2, 18, ink, Theme.bold, Theme.CENTER);
-                    Theme.text(c, t.clock(), r.centerX() + 10, r.centerY() + 18, 15, ink, Theme.bold, Theme.CENTER);
+                    Theme.text(c, t.clock(), r.centerX() + 10, r.centerY() + 18, 18, ink, Theme.bold, Theme.CENTER);
                 } else {
                     Theme.text(c, (t.latched() ? "Tap to send  " : "Let go to send  ") + t.clock(), r.centerX() + 10, r.centerY() + 8, 20,
                         ink, Theme.bold, Theme.CENTER);
@@ -672,7 +672,7 @@ class ConvoyPage extends Page implements Convoy.Listener, Talk.Listener {
         float tw = Theme.width(label, size, Theme.bold);
         float cx = small ? r.centerX() : r.centerX() - tw / 2 - 6, cy = small ? r.centerY() - 14 : r.centerY();
         mic(c, small ? cx : cx - 4, cy, 0xffffffff);
-        if (small) Theme.text(c, "Talk", r.centerX(), r.centerY() + 30, 21, 0xffffffff, Theme.bold, Theme.CENTER);
+        if (small) Theme.text(c, "Talk", r.centerX(), r.centerY() + 30, 22, 0xffffffff, Theme.bold, Theme.CENTER);
         else Theme.text(c, label, cx + 18, r.centerY() + 8, size, 0xffffffff, Theme.bold, Theme.LEFT);
     }
 

@@ -151,6 +151,16 @@ final class Theme {
         P.setColor(accent ? BLUE_HI : EDGE);
         c.drawRoundRect(r, radius, radius, P);
         P.setStyle(Paint.Style.FILL);
+        pressed(c, r, radius);
+    }
+
+    /** Lights the button at `r` while a finger is on it (Press); every button and chip drawn calls this. */
+    static void pressed(Canvas c, RectF r, float radius) {
+        if (!Press.on(c, r)) return;
+        P.setShader(null);
+        P.setStyle(Paint.Style.FILL);
+        P.setColor(0x38ffffff);
+        c.drawRoundRect(r, radius, radius, P);
     }
 
     static void chip(Canvas c, float l, float t, float r, float b, String label, boolean active, int color) {
@@ -164,7 +174,9 @@ final class Theme {
         P.setColor(active ? BLUE : (color != 0 ? (color & 0x00ffffff) | 0x99000000 : EDGE));
         c.drawRoundRect(R, 10, 10, P);
         P.setStyle(Paint.Style.FILL);
-        text(c, label, (l + r) / 2, (t + b) / 2 + 6, 17, active ? 0xffffffff : (color != 0 ? color : TEXT), sans, CENTER);
+        pressed(c, R, 10);
+        float size = b - t >= 50 ? 20 : 18;
+        text(c, label, (l + r) / 2, (t + b) / 2 + size * 0.36f, size, active ? 0xffffffff : (color != 0 ? color : TEXT), sans, CENTER);
     }
 
     static void slider(Canvas c, float x0, float x1, float cy, float frac) {

@@ -25,10 +25,16 @@ import org.json.JSONObject;
 
 class DashcamPage extends Page implements SensorEventListener {
     private static final int TAB_CLIPS = 0, TAB_MARKS = 1, TAB_TRIPS = 2, TAB_PREVIEW = 3, TAB_SETTINGS = 4, TAB_INTERIOR = 5, TAB_CAMERA = 6;
-    private static final float LIST_T = 136, LIST_B = 618, ROW_H = 62, SET_H = 56;
+    // rows and their buttons are sized for a finger in a car: 56 px and up, with room between
+    private static final float LIST_T = 148, LIST_B = 618, ROW_H = 78, SET_H = 64;
+    private static final String[] TAB_NAMES = {"Clips", "Marks", "Trips", "Preview", "Settings", "Interior", "Camera"};
+    private static final float CAM_T = 216;
 
-    private static final float[][] TABS = {{571, 637}, {645, 717}, {725, 791}, {799, 885}, {893, 983}, {991, 1077}, {1085, 1171}};
-    private static final float CAM_T = 192;
+    /** The tabs share the panel's width. */
+    private static RectF tabRect(int i) {
+        float l = 569, w = (Wide.rx(1252) - l - 6 * (TAB_NAMES.length - 1)) / TAB_NAMES.length;
+        return new RectF(l + i * (w + 6), 80, l + i * (w + 6) + w, 136);
+    }
 
     private final Dashcam dash;
     private final SimpleDateFormat when = new SimpleDateFormat("EEE d MMM  HH:mm:ss", Locale.US);
@@ -217,7 +223,7 @@ class DashcamPage extends Page implements SensorEventListener {
         c.drawCircle(46, 102, 10, Theme.P);
         Theme.text(c, rec ? "RECORDING" : "STOPPED", 68, 112, 28, 0xffffffff, Theme.bold, Theme.LEFT);
         long elapsed = rec ? SystemClock.elapsedRealtime() - dash.segStartReal : 0;
-        if (rec) Theme.text(c, clock(elapsed) + " / " + clock(dash.segLenMs), 522, 110, 19, Theme.SUB, Theme.sans, Theme.RIGHT);
+        if (rec) Theme.text(c, clock(elapsed) + " / " + clock(dash.segLenMs), 522, 110, 20, Theme.SUB, Theme.sans, Theme.RIGHT);
         float frac = rec && dash.segLenMs > 0 ? Math.min(1f, elapsed / (float) dash.segLenMs) : 0;
         Theme.P.setColor(Theme.accent(0x38));
         c.drawRoundRect(new RectF(32, 128, 522, 134), 3, 3, Theme.P);
@@ -225,8 +231,10 @@ class DashcamPage extends Page implements SensorEventListener {
         c.drawRoundRect(new RectF(32, 128, 32 + 490 * frac, 134), 3, 3, Theme.P);
         String st = dash.status;
         int stc = st.startsWith("Recording") ? Theme.GREEN : (st.startsWith("Stopped") ? Theme.DIM : Theme.GOLD);
-        Theme.text(c, Theme.fit(st + (dash.lockPending ? "  \u00b7  clip will be locked" : ""), 490, 15, Theme.sans),
-            32, 160, 15, stc, Theme.sans, Theme.LEFT);
+        // the heading already says Recording or Stopped: this line is for anything more
+        if (st.equalsIgnoreCase(rec ? "Recording" : "Stopped")) st = "";
+        if (dash.lockPending) st = st.isEmpty() ? "This clip will be locked" : st + "  \u00b7  clip will be locked";
+        Theme.text(c, Theme.fit(st, 490, 18, Theme.sans), 32, 160, 18, stc, Theme.sans, Theme.LEFT);
 
         long cap = DashPrefs.capBytes(act);
         String where = dash.onCard() ? "SD card" : "Phone storage";
@@ -252,13 +260,13 @@ class DashcamPage extends Page implements SensorEventListener {
             {"This trip", trip}};
         float y = 196;
         for (int i = 0; i < rows.length; i++) {
-            Theme.text(c, rows[i][0], 32, y, 13, Theme.DIM, Theme.sans, Theme.LEFT);
-            Theme.text(c, Theme.fit(rows[i][1], 490, 18, Theme.bold), 32, y + 24, 18,
+            Theme.text(c, rows[i][0], 32, y, 18, Theme.DIM, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit(rows[i][1], 490, 20, Theme.bold), 32, y + 25, 20,
                 i == 3 ? pc : 0xffffffff, Theme.bold, Theme.LEFT);
             y += 52;
         }
         String note = Exporter.busy || !Exporter.status.isEmpty() ? Exporter.status : dash.markNote;
-        if (!note.isEmpty()) Theme.text(c, Theme.fit(note, 490, 13, Theme.sans), 32, 450, 13, Theme.GOLD, Theme.sans, Theme.LEFT);
+        if (!note.isEmpty()) Theme.text(c, Theme.fit(note, 490, 18, Theme.sans), 32, 450, 18, Theme.GOLD, Theme.sans, Theme.LEFT);
         RectF bm = new RectF(32, 464, 522, 526);
         Theme.button(c, bm, false, 14);
         Theme.P.setShader(null);
@@ -267,14 +275,14 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setColor(Theme.GOLD);
             c.drawRoundRect(bm, 14, 14, Theme.P);
             long ms = SystemClock.elapsedRealtime() - dash.markStartReal;
-            Theme.text(c, "End mark   " + clock(ms), 277, 504, 21, 0xff05070d, Theme.bold, Theme.CENTER);
+            Theme.text(c, "End mark   " + clock(ms), 277, 504, 22, 0xff05070d, Theme.bold, Theme.CENTER);
         } else {
             Theme.P.setStyle(Paint.Style.STROKE);
             Theme.P.setStrokeWidth(1.6f);
             Theme.P.setColor(rec ? 0xaae3b341 : 0x44e3b341);
             c.drawRoundRect(bm, 14, 14, Theme.P);
             Theme.P.setStyle(Paint.Style.FILL);
-            Theme.text(c, "Start mark", 277, 504, 21, rec ? Theme.GOLD : 0xff5d7090, Theme.bold, Theme.CENTER);
+            Theme.text(c, "Start mark", 277, 504, 22, rec ? Theme.GOLD : 0xff5d7090, Theme.bold, Theme.CENTER);
         }
 
         RectF b1 = new RectF(32, 548, 282, 612);
@@ -284,7 +292,7 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setColor(0xffa3233a);
             c.drawRoundRect(b1, 14, 14, Theme.P);
         }
-        Theme.text(c, rec ? "Stop recording" : "Start recording", 157, 589, 21, 0xffffffff, Theme.bold, Theme.CENTER);
+        Theme.text(c, rec ? "Stop recording" : "Start recording", 157, 589, 22, 0xffffffff, Theme.bold, Theme.CENTER);
         RectF b2 = new RectF(298, 548, 522, 612);
         Theme.button(c, b2, false, 14);
         Theme.P.setStyle(Paint.Style.STROKE);
@@ -298,8 +306,10 @@ class DashcamPage extends Page implements SensorEventListener {
 
     private void right(Canvas c) {
         Theme.panel(c, 555, 68, Wide.rx(1266), 625);
-        String[] names = {"Clips", "Marks", "Trips", "Preview", "Settings", "Interior", "Camera"};
-        for (int i = 0; i < TABS.length; i++) Theme.chip(c, TABS[i][0], 82, TABS[i][1], 122, names[i], tab == i, 0);
+        for (int i = 0; i < TAB_NAMES.length; i++) {
+            RectF t = tabRect(i);
+            Theme.chip(c, t.left, t.top, t.right, t.bottom, TAB_NAMES[i], tab == i, 0);
+        }
         if (tab == TAB_SETTINGS) { settings(c); return; }
         if (tab == TAB_CAMERA) { cameraTab(c); return; }
         if (tab == TAB_PREVIEW || tab == TAB_INTERIOR) {
@@ -317,7 +327,7 @@ class DashcamPage extends Page implements SensorEventListener {
 
     private void clipsList(Canvas c) {
         if (clips.isEmpty()) {
-            Theme.text(c, "No recordings yet", Wide.mid(561, 1260), 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "No recordings yet", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
         float y = LIST_T - scroll;
@@ -329,17 +339,17 @@ class DashcamPage extends Page implements SensorEventListener {
 
     private void clipRow(Canvas c, Clip k, float y) {
         boolean cur = dash.recording && k.file.getName().equals(dash.clipName);
-        Theme.text(c, when.format(new Date(k.startMs)), 575, y + 27, 17, cur ? Theme.GREEN : 0xffe8eef7, Theme.sans, Theme.LEFT);
-        Theme.text(c, cur ? "recording now" : size(k.size) + (k.locked ? "  \u00b7  locked" : ""), 575, y + 47, 13,
+        Theme.text(c, when.format(new Date(k.startMs)), 575, y + 33, 20, cur ? Theme.GREEN : 0xffe8eef7, Theme.sans, Theme.LEFT);
+        Theme.text(c, cur ? "recording now" : size(k.size) + (k.locked ? "  \u00b7  locked" : ""), 575, y + 59, 18,
             k.locked ? Theme.GOLD : Theme.DIM, Theme.sans, Theme.LEFT);
         if (cur) return;
         float e = Wide.d();                                 // the row's buttons sit at the panel's right edge
-        RectF p = new RectF(1062 + e, y + 10, 1108 + e, y + 52), l = new RectF(1118 + e, y + 10, 1164 + e, y + 52);
-        RectF d = new RectF(1174 + e, y + 10, 1220 + e, y + 52);
+        RectF p = new RectF(PLAY_L + e, y + 9, PLAY_L + 60 + e, y + 69), l = new RectF(LOCK_L + e, y + 9, LOCK_L + 60 + e, y + 69);
+        RectF d = new RectF(DEL_L + e, y + 9, DEL_L + 60 + e, y + 69);
         Theme.button(c, p, false, 10);
-        Icons.play(c, 1086 + e, y + 31, 10, 0xffdfe8f7);
+        Icons.play(c, PLAY_L + 31 + e, y + 39, 13, 0xffdfe8f7);
         Theme.button(c, l, false, 10);
-        padlock(c, 1141 + e, y + 33, k.locked, k.locked ? Theme.GOLD : 0xff8fa3bd);
+        padlock(c, LOCK_L + 30 + e, y + 43, k.locked, k.locked ? Theme.GOLD : 0xff8fa3bd);
         boolean arm = k.file.getPath().equals(armed);
         Theme.button(c, d, false, 10);
         if (arm) {
@@ -347,13 +357,16 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setColor(0xffa3233a);
             c.drawRoundRect(d, 10, 10, Theme.P);
         }
-        trash(c, 1197 + e, y + 31, arm ? 0xffffffff : 0xff8fa3bd);
-        if (arm) Theme.text(c, "Tap again to delete", 1060 + e, y + 37, 17, 0xffff8fa3, Theme.bold, Theme.RIGHT);
+        trash(c, DEL_L + 30 + e, y + 39, arm ? 0xffffffff : 0xff8fa3bd);
+        if (arm) Theme.text(c, "Tap again to delete", PLAY_L - 14 + e, y + 46, 18, 0xffff8fa3, Theme.bold, Theme.RIGHT);
     }
+
+    // a list row's buttons, 60 wide with 14 between (in a 1280 layout; they move with the right edge)
+    private static final float PLAY_L = 1044, LOCK_L = 1118, DEL_L = 1192, EXPORT_L = 1040;
 
     private void marksList(Canvas c) {
         if (marks.isEmpty()) {
-            Theme.text(c, "No marks yet. Tap MARK while recording to log a stretch.", Wide.mid(561, 1260), 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "No marks yet. Tap MARK while recording to log a stretch.", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
         float y = LIST_T - scroll;
@@ -364,17 +377,17 @@ class DashcamPage extends Page implements SensorEventListener {
     }
 
     private void markRow(Canvas c, MarkInfo m, float y) {
-        Theme.text(c, m.label + "   \u00b7   " + when.format(new Date(m.start)), 575, y + 27, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
+        Theme.text(c, m.label + "   \u00b7   " + when.format(new Date(m.start)), 575, y + 33, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
         String sub = m.open ? "recording this mark\u2026"
             : clock(m.durationMs) + "  \u00b7  " + String.format(Locale.US, "%.1f km", m.distM / 1000.0)
                 + "  \u00b7  max " + Math.round(m.maxKmh) + " km/h  \u00b7  " + m.spans.length + (m.spans.length == 1 ? " clip" : " clips")
                 + (m.gpx != null && m.gpx.exists() ? "  \u00b7  GPX" : "  \u00b7  no GPS");
-        Theme.text(c, sub, 575, y + 47, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(sub, Wide.rx(EXPORT_L) - 14 - 575, 18, Theme.sans), 575, y + 59, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         if (m.open) return;
         boolean busy = Exporter.busy && Exporter.busyId == m.id;
         String lab = m.exported() ? "Exported" : busy ? "Working\u2026" : "Export";
-        Theme.chip(c, Wide.rx(1060), y + 12, Wide.rx(1172), y + 50, lab, false, m.exported() ? Theme.GOLD : 0);
-        RectF d = new RectF(Wide.rx(1182), y + 10, Wide.rx(1228), y + 52);
+        Theme.chip(c, Wide.rx(EXPORT_L), y + 11, Wide.rx(DEL_L) - 14, y + 67, lab, false, m.exported() ? Theme.GOLD : 0);
+        RectF d = new RectF(Wide.rx(DEL_L), y + 9, Wide.rx(DEL_L) + 60, y + 69);
         boolean arm = m.json.getPath().equals(armed);
         Theme.button(c, d, false, 10);
         if (arm) {
@@ -382,12 +395,12 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setColor(0xffa3233a);
             c.drawRoundRect(d, 10, 10, Theme.P);
         }
-        trash(c, Wide.rx(1205), y + 31, arm ? 0xffffffff : 0xff8fa3bd);
+        trash(c, Wide.rx(DEL_L) + 30, y + 39, arm ? 0xffffffff : 0xff8fa3bd);
     }
 
     private void tripsList(Canvas c) {
         if (trips.isEmpty()) {
-            Theme.text(c, "No trips yet. A trip is a recording session.", Wide.mid(561, 1260), 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "No trips yet. A trip is a recording session.", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
         float y = LIST_T - scroll;
@@ -396,13 +409,15 @@ class DashcamPage extends Page implements SensorEventListener {
                 long dur = t.optLong("dur");
                 double km = t.optDouble("dist") / 1000.0;
                 double avg = dur > 0 ? km / (dur / 3600000.0) : 0;
-                Theme.text(c, when.format(new Date(t.optLong("start"))), 575, y + 27, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.text(c, when.format(new Date(t.optLong("start"))), 575, y + 33, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
                 Theme.text(c, String.format(Locale.US, "%.1f km  \u00b7  %d min  \u00b7  max %.0f km/h  \u00b7  avg %.0f km/h",
-                    km, dur / 60000, t.optDouble("max") * 3.6, avg), 575, y + 48, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+                    km, dur / 60000, t.optDouble("max") * 3.6, avg), 575, y + 59, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             }
             y += ROW_H;
         }
     }
+
+    private static final float SET_L = 900, TEST_L = 790;       // where a settings row's value (and Test) starts
 
     private String[][] settingRows() {
         int cap = DashPrefs.capIdx(act);
@@ -421,7 +436,7 @@ class DashcamPage extends Page implements SensorEventListener {
         long now = SystemClock.elapsedRealtime();
         Bitmap b = dash.preview;
         boolean fresh = b != null && now - dash.previewAt < 2500;
-        RectF r = new RectF(566, 138, 1254, 525);
+        RectF r = new RectF(566, 146, 1254, 533);
         Theme.P.setShader(null);
         Theme.P.setStyle(Paint.Style.FILL);
         Theme.P.setColor(0xff03060c);
@@ -447,14 +462,14 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setStyle(Paint.Style.FILL);
             Theme.P.setColor(0xb0000000);
             c.drawRoundRect(new RectF(r.left + 12, r.top + 12, r.left + 470, r.top + 46), 8, 8, Theme.P);
-            Theme.text(c, "Still from the last finished clip, " + clock(ago * 1000) + " ago", r.left + 24, r.top + 35, 15, Theme.GOLD, Theme.sans, Theme.LEFT);
+            Theme.text(c, "Still from the last finished clip, " + clock(ago * 1000) + " ago", r.left + 24, r.top + 35, 18, Theme.GOLD, Theme.sans, Theme.LEFT);
         } else {
             String st = dash.previewState;
             String msg = st.isEmpty() || st.equals("Live") ? "Starting the camera\u2026" : st;
             if (dash.recording) msg = "Live view is not available while recording on this phone";
             Theme.text(c, msg, r.centerX(), r.centerY() - 8, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             if (dash.recording)
-                Theme.text(c, "A still from the last finished clip appears here once the first clip ends", r.centerX(), r.centerY() + 20, 14, Theme.DIM, Theme.sans, Theme.CENTER);
+                Theme.text(c, "A still from the last finished clip appears here once the first clip ends", r.centerX(), r.centerY() + 20, 18, Theme.DIM, Theme.sans, Theme.CENTER);
         }
         Theme.P.setStyle(Paint.Style.STROKE);
         Theme.P.setStrokeWidth(1.2f);
@@ -463,8 +478,8 @@ class DashcamPage extends Page implements SensorEventListener {
         Theme.P.setStyle(Paint.Style.FILL);
 
         float y = 556;
-        Theme.text(c, "Roll", 575, y, 13, Theme.DIM, Theme.sans, Theme.LEFT);
-        Theme.text(c, "Camera pitch", 800, y, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Roll", 575, y, 18, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "Camera pitch", 800, y, 18, Theme.DIM, Theme.sans, Theme.LEFT);
         String rs = haveTilt ? String.format(Locale.US, "%+.1f\u00b0", roll) : "-";
         String ps = haveTilt ? String.format(Locale.US, "%+.1f\u00b0", elev) : "-";
         int rc = haveTilt && Math.abs(roll) < 1.5f ? Theme.GREEN : Theme.TEXT;
@@ -481,8 +496,7 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.P.setColor(Math.abs(roll) < 1.5f ? 0xff46d17a : 0xffe3b341);
             c.drawCircle((bx0 + bx1) / 2 + k * (bx1 - bx0) / 2, by, 8, Theme.P);
         }
-        Theme.text(c, "Live view for aiming only; it is not saved. Roll + means the right side is low. Pitch 0 is level; + is looking up.",
-            575, 606, 12, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, "For aiming only. Roll + is right side low; pitch + is looking up.", 575, 610, 18, Theme.DIM, Theme.sans, Theme.LEFT);
     }
 
     // ---- the interior shot ----
@@ -528,7 +542,7 @@ class DashcamPage extends Page implements SensorEventListener {
     }
 
     private void interiorTab(Canvas c) {
-        RectF r = new RectF(566, 138, 1254, 525);
+        RectF r = new RectF(566, 146, 1254, 533);
         Theme.P.setShader(null);
         Theme.P.setStyle(Paint.Style.FILL);
         Theme.P.setColor(0xff03060c);
@@ -543,7 +557,7 @@ class DashcamPage extends Page implements SensorEventListener {
         if (dash.shotAt != 0) {
             Theme.text(c, String.valueOf(Math.max(1, (left + 999) / 1000)), r.centerX(), r.centerY() + 40, 150, 0xffffffff, Theme.bold, Theme.CENTER);
             Theme.text(c, "Get out and close the door: the front camera takes the photo at zero",
-                r.centerX(), r.bottom - 30, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+                r.centerX(), r.bottom - 30, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         } else if (dash.shooting) {
             Theme.text(c, "Taking the photo\u2026", r.centerX(), r.centerY(), 24, Theme.GOLD, Theme.bold, Theme.CENTER);
         } else if (shot != null && newest != null && newest.equals(shotFile)) {
@@ -552,12 +566,12 @@ class DashcamPage extends Page implements SensorEventListener {
             c.drawBitmap(shot, null, new RectF(r.centerX() - w / 2, r.centerY() - hh / 2, r.centerX() + w / 2, r.centerY() + hh / 2), Theme.BMP);
             Theme.P.setColor(0xb0000000);
             c.drawRoundRect(new RectF(r.left + 12, r.top + 12, r.left + 420, r.top + 46), 8, 8, Theme.P);
-            Theme.text(c, Theme.fit(when.format(new Date(newest.lastModified())), 390, 15, Theme.sans),
-                r.left + 24, r.top + 35, 15, Theme.GOLD, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit(when.format(new Date(newest.lastModified())), 390, 18, Theme.sans),
+                r.left + 24, r.top + 35, 18, Theme.GOLD, Theme.sans, Theme.LEFT);
         } else {
             Theme.text(c, newest == null ? "No interior shot yet" : "Loading\u2026", r.centerX(), r.centerY() - 8, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             if (newest == null)
-                Theme.text(c, "A clean view of the inside, taken with the front camera, for videos later", r.centerX(), r.centerY() + 20, 14, Theme.DIM, Theme.sans, Theme.CENTER);
+                Theme.text(c, "A clean view of the inside, taken with the front camera, for videos later", r.centerX(), r.centerY() + 20, 18, Theme.DIM, Theme.sans, Theme.CENTER);
         }
         Theme.P.setStyle(Paint.Style.STROKE);
         Theme.P.setStrokeWidth(1.2f);
@@ -568,28 +582,25 @@ class DashcamPage extends Page implements SensorEventListener {
         boolean counting = dash.shotAt != 0;
         Theme.button(c, SHOT_BTN, !counting && !dash.shooting, 14);
         Theme.text(c, counting ? "Cancel" : dash.shooting ? "Taking\u2026" : "Take interior shot",
-            SHOT_BTN.centerX(), SHOT_BTN.centerY() + 8, 21, 0xffffffff, Theme.bold, Theme.CENTER);
+            SHOT_BTN.centerX(), SHOT_BTN.centerY() + 8, 22, 0xffffffff, Theme.bold, Theme.CENTER);
         String st = dash.shotStatus;
         Theme.text(c, Theme.fit(st.isEmpty() ? Dashcam.SHOT_DELAY_MS / 1000 + " s to get out, beeps for the last 3" : st,
-            320, 15, Theme.sans), 925, 568, 15, st.startsWith("Saved") ? Theme.GREEN : st.isEmpty() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
-        Theme.text(c, Theme.fit(shots.size() + (shots.size() == 1 ? " shot" : " shots") + "  \u00b7  recording pauses for it", 320, 13, Theme.sans),
-            925, 592, 13, Theme.DIM, Theme.sans, Theme.LEFT);
+            320, 18, Theme.sans), 925, 568, 18, st.startsWith("Saved") ? Theme.GREEN : st.isEmpty() ? Theme.SUB : Theme.GOLD, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(shots.size() + (shots.size() == 1 ? " shot" : " shots") + "  \u00b7  recording pauses for it", 320, 18, Theme.sans),
+            925, 592, 18, Theme.DIM, Theme.sans, Theme.LEFT);
     }
 
     private void settings(Canvas c) {
         String[][] rows = settingRows();
-        float y = 138;
+        float y = LIST_T;
         for (int i = 0; i < rows.length; i++) {
-            Theme.text(c, rows[i][0], 575, y + 34, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-            Theme.chip(c, Wide.rx(940), y + 8, Wide.rx(1246), y + 48, rows[i][1], false, 0);
+            Theme.text(c, rows[i][0], 575, y + 39, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
+            Theme.chip(c, Wide.rx(SET_L), y + 4, Wide.rx(1246), y + 60, Theme.fit(rows[i][1], 1246 - SET_L - 20, 20, Theme.sans), false, 0);
             y += SET_H;
         }
         File d = dash.dir();
-        Theme.text(c, "Clips are saved to " + (d == null ? "(no storage)" : d.getPath().replace("/storage/", "")), 575, 548, 12, Theme.DIM, Theme.sans, Theme.LEFT);
-        Theme.text(c, "Locked clips are never deleted automatically. Subtitle files (.srt) carry time, speed and position.",
-            575, 568, 12, Theme.DIM, Theme.sans, Theme.LEFT);
-        Theme.text(c, "Turn on 'Start when power connects' once the phone is in the car: it will record, including audio.",
-            575, 588, 12, Theme.DIM, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit("Saved to " + (d == null ? "(no storage)" : d.getPath().replace("/storage/", ""))
+            + ". Locked clips are never deleted automatically.", Wide.rx(1246) - 575, 16, Theme.sans), 575, 614, 16, Theme.DIM, Theme.sans, Theme.LEFT);
     }
 
     // ---- what the camera offers ----
@@ -597,21 +608,21 @@ class DashcamPage extends Page implements SensorEventListener {
     private void cameraTab(Canvas c) {
         List<CameraOptions.Opt> all = dash.cameraOptions;
         int changes = CameraOptions.variants(act, all).size() - 1;
-        Theme.text(c, "Test drive", 575, 168, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-        Theme.chip(c, 670, 142, 770, 182, DashPrefs.testMinutes(act) + " min", false, 0);
-        Theme.chip(c, 780, 142, 920, 182, dash.testing ? "Stop test" : "Start test", dash.testing, 0);
+        Theme.text(c, "Test drive", 575, 186, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
+        Theme.chip(c, 686, 152, 796, 208, DashPrefs.testMinutes(act) + " min", false, 0);
+        Theme.chip(c, 806, 152, 956, 208, dash.testing ? "Stop test" : "Start test", dash.testing, 0);
         String note = !dash.cameraRejected.isEmpty() ? "Camera refused: " + dash.cameraRejected
             : changes + (changes == 1 ? " change" : " changes") + ", 20 s each, back to base between";
-        Theme.text(c, Theme.fit(note, Wide.rx(1246) - 935, 14, Theme.sans), 935, 168, 14, dash.cameraRejected.isEmpty() ? Theme.DIM : Theme.GOLD, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(note, Wide.rx(1246) - 972, 18, Theme.sans), 972, 186, 18, dash.cameraRejected.isEmpty() ? Theme.DIM : Theme.GOLD, Theme.sans, Theme.LEFT);
         c.save();
         c.clipRect(561, CAM_T, Wide.rx(1260), LIST_B);
-        if (all.isEmpty()) Theme.text(c, "Reading the camera\u2026", Wide.mid(561, 1260), 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+        if (all.isEmpty()) Theme.text(c, "Reading the camera\u2026", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         float y = CAM_T - scroll;
         for (CameraOptions.Opt o : all) {
             if (y + SET_H > CAM_T && y < LIST_B) {
-                Theme.text(c, Theme.fit(o.label, Wide.rx(840) - 575, 17, Theme.sans), 575, y + 34, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
-                Theme.chip(c, Wide.rx(850), y + 8, Wide.rx(930), y + 48, "Test", CameraOptions.inTest(act, o), 0);
-                Theme.chip(c, Wide.rx(940), y + 8, Wide.rx(1246), y + 48, o.name(CameraOptions.value(act, o)), false, 0);
+                Theme.text(c, Theme.fit(o.label, Wide.rx(TEST_L) - 10 - 575, 20, Theme.sans), 575, y + 39, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.chip(c, Wide.rx(TEST_L), y + 4, Wide.rx(SET_L) - 10, y + 60, "Test", CameraOptions.inTest(act, o), 0);
+                Theme.chip(c, Wide.rx(SET_L), y + 4, Wide.rx(1246), y + 60, Theme.fit(o.name(CameraOptions.value(act, o)), 1246 - SET_L - 20, 20, Theme.sans), false, 0);
             }
             y += SET_H;
         }
@@ -619,8 +630,8 @@ class DashcamPage extends Page implements SensorEventListener {
     }
 
     private void cameraTap(float x, float y) {
-        if (in(x, y, 670, 142, 770, 182)) { DashPrefs.cycleTestMinutes(act); return; }
-        if (in(x, y, 780, 142, 920, 182)) {
+        if (in(x, y, 686, 152, 796, 208)) { DashPrefs.cycleTestMinutes(act); return; }
+        if (in(x, y, 806, 152, 956, 208)) {
             if (dash.testing) dash.stop(); else dash.startTest(DashPrefs.testMinutes(act));
             return;
         }
@@ -628,8 +639,8 @@ class DashcamPage extends Page implements SensorEventListener {
         List<CameraOptions.Opt> all = dash.cameraOptions;
         int i = (int) ((y - CAM_T + scroll) / SET_H);
         if (i < 0 || i >= all.size()) return;
-        if (x >= Wide.rx(850) && x <= Wide.rx(930)) CameraOptions.toggleTest(act, all, all.get(i));
-        else if (x >= Wide.rx(940) && x <= Wide.rx(1246)) CameraOptions.cycle(act, all.get(i));
+        if (x >= Wide.rx(TEST_L) && x < Wide.rx(SET_L) - 5) CameraOptions.toggleTest(act, all, all.get(i));
+        else if (x >= Wide.rx(SET_L) - 5 && x <= Wide.rx(1246)) CameraOptions.cycle(act, all.get(i));
     }
 
     private void padlock(Canvas c, float cx, float cy, boolean closed, int col) {
@@ -705,8 +716,8 @@ class DashcamPage extends Page implements SensorEventListener {
         }
         if (in(x, y, 298, 548, 522, 612)) { dash.lock(); return; }
         if (in(x, y, 32, 464, 522, 526)) { dash.toggleMark(); refreshTicks = 0; return; }
-        if (y >= 82 && y <= 122) {
-            for (int i = 0; i < TABS.length; i++) if (x >= TABS[i][0] && x <= TABS[i][1]) { setTab(i); }
+        if (y >= 76 && y <= 140) {
+            for (int i = 0; i < TAB_NAMES.length; i++) if (x >= tabRect(i).left - 3 && x <= tabRect(i).right + 3) { setTab(i); }
             return;
         }
         if (tab == TAB_SETTINGS) { settingTap(x, y); return; }
@@ -723,8 +734,8 @@ class DashcamPage extends Page implements SensorEventListener {
             if (idx < 0 || idx >= marks.size()) return;
             MarkInfo m = marks.get(idx);
             if (m.open) return;
-            if (x >= Wide.rx(1060) && x <= Wide.rx(1172) && !m.exported()) Exporter.start(dash, m);
-            else if (x >= Wide.rx(1182) && x <= Wide.rx(1228)) {
+            if (x >= Wide.rx(EXPORT_L) && x < Wide.rx(DEL_L) - 7 && !m.exported()) Exporter.start(dash, m);
+            else if (x >= Wide.rx(DEL_L) - 7 && x <= Wide.rx(DEL_L) + 66) {
                 if (m.json.getPath().equals(armed)) { dash.deleteMark(m); armed = null; refreshTicks = 0; }
                 else { armed = m.json.getPath(); armedAt = SystemClock.elapsedRealtime(); }
             }
@@ -735,8 +746,8 @@ class DashcamPage extends Page implements SensorEventListener {
             if (idx < 0 || idx >= clips.size()) return;
             Clip k = clips.get(idx);
             if (dash.recording && k.file.getName().equals(dash.clipName)) return;
-            if (x >= Wide.rx(1118) && x <= Wide.rx(1164)) { dash.toggleLock(k); refreshTicks = 0; }
-            else if (x >= Wide.rx(1174) && x <= Wide.rx(1220)) {
+            if (x >= Wide.rx(LOCK_L) - 7 && x < Wide.rx(DEL_L) - 7) { dash.toggleLock(k); refreshTicks = 0; }
+            else if (x >= Wide.rx(DEL_L) - 7 && x <= Wide.rx(DEL_L) + 66) {
                 if (k.file.getPath().equals(armed)) { dash.deleteClip(k); clips.remove(idx); armed = null; refreshTicks = 0; }
                 else { armed = k.file.getPath(); armedAt = SystemClock.elapsedRealtime(); }
             } else open(k);
@@ -747,8 +758,8 @@ class DashcamPage extends Page implements SensorEventListener {
     private void open(Clip k) { ClipPlayer.open(act, k.file); }
 
     private void settingTap(float x, float y) {
-        if (x < Wide.rx(940) || x > Wide.rx(1246)) return;
-        int i = (int) ((y - 138) / SET_H);
+        if (x < Wide.rx(SET_L) || x > Wide.rx(1246) || y < LIST_T) return;
+        int i = (int) ((y - LIST_T) / SET_H);
         switch (i) {
             case 0: DashPrefs.cycleSeg(act); break;
             case 1: DashPrefs.cycleQuality(act); break;

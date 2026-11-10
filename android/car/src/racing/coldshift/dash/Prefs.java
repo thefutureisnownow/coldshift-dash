@@ -15,7 +15,7 @@ import org.json.JSONObject;
 final class Prefs {
     private Prefs() {}
 
-    static final String[] BACKED_UP = {"brightness", "idle_minutes", "heading_up", "voice", "convoy_wake", "convoy_autoplay", "convoy_text", "convoy_server", "convoy_start_keys", "kiosk", "devices", "audio_routes", "sound_channels"};
+    static final String[] BACKED_UP = {"brightness", "idle_minutes", "haptics", "heading_up", "voice", "convoy_wake", "convoy_autoplay", "convoy_text", "convoy_server", "convoy_start_keys", "kiosk", "devices", "audio_routes", "sound_channels"};
     private static SharedPreferences.OnSharedPreferenceChangeListener watcher;   // held: prefs keep it weakly
 
     /** Keeps settings.json on the card current. */
@@ -35,6 +35,7 @@ final class Prefs {
             JSONObject o = new JSONObject();
             o.put("brightness", brightness(c));
             o.put("idle_minutes", idleMinutes(c));
+            o.put("haptics", haptics(c));
             o.put("heading_up", headingUp(c));
             o.put("voice", sp(c).getString("voice", Voice.BUILT_IN));
             o.put("convoy_wake", convoyWake(c));
@@ -75,6 +76,7 @@ final class Prefs {
                 SharedPreferences.Editor e = sp(c).edit();
                 if (o.has("brightness")) e.putInt("brightness", o.getInt("brightness"));
                 if (o.has("idle_minutes")) e.putInt("idle_minutes", o.getInt("idle_minutes"));
+                if (o.has("haptics")) e.putBoolean("haptics", o.getBoolean("haptics"));
                 if (o.has("heading_up")) e.putBoolean("heading_up", o.getBoolean("heading_up"));
                 if (o.has("voice")) e.putString("voice", o.getString("voice"));
                 if (o.has("convoy_wake")) e.putBoolean("convoy_wake", o.getBoolean("convoy_wake"));
@@ -169,6 +171,10 @@ final class Prefs {
             sp(c).edit().putString("sound_channels", a.toString()).apply();
         } catch (Exception e) { /* only strings */ }
     }
+
+    /** Whether a pressed button buzzes (Haptics). */
+    static boolean haptics(Context c) { return sp(c).getBoolean("haptics", true); }
+    static void setHaptics(Context c, boolean v) { sp(c).edit().putBoolean("haptics", v).apply(); }
 
     static int idleMinutes(Context c) { return sp(c).getInt("idle_minutes", 5); }
     static void setIdleMinutes(Context c, int m) { sp(c).edit().putInt("idle_minutes", m).apply(); }

@@ -22,8 +22,8 @@ import java.util.Locale;
  * the rest of mode 09 once a connection. The last read stays on the page when the car goes away.
  */
 class DiagPage extends Page {
-    private static final RectF REFRESH = Wide.right(new RectF(1146, 62, 1256, 102));
-    private static final float TOP = 140, BOTTOM = 596, ROW = 32;
+    private static final RectF REFRESH = Wide.right(new RectF(1126, 60, 1266, 116));
+    private static final float TOP = 146, BOTTOM = 596, ROW = 32;
     private static final long EVERY_MS = 30000;
 
     private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
@@ -57,11 +57,10 @@ class DiagPage extends Page {
     void draw(Canvas c) {
         Obd o = Obd.get(act);
         Obd.Diag d = o.diag();
-        Theme.text(c, "DIAGNOSTICS", 24, 100, 30, 0xffffffff, Theme.bold, Theme.LEFT);
         if (o.state() == Obd.NONE) {
             Theme.panel(c, 14, TOP, Wide.W - 14, 580);
             Theme.text(c, "No OBD adapter chosen", Wide.W / 2, 330, 30, 0xffffffff, Theme.bold, Theme.CENTER);
-            Theme.text(c, "Choose your OBD adapter in Settings, Devices.", Wide.W / 2, 368, 16, Theme.SUB, Theme.sans, Theme.CENTER);
+            Theme.text(c, "Choose your OBD adapter in Settings, Devices.", Wide.W / 2, 368, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
         Theme.chip(c, REFRESH.left, REFRESH.top, REFRESH.right, REFRESH.bottom, "Refresh", false, o.connected() && !o.diagReading() ? 0 : Theme.DIMMER);
@@ -72,7 +71,7 @@ class DiagPage extends Page {
             line = o.status() + (d == null ? "" : " · last read at " + clock.format(new Date(d.at)));
             col = Theme.GOLD;
         } else line = d == null ? "" : "Read at " + clock.format(new Date(d.at));
-        Theme.text(c, Theme.fit(line, REFRESH.left - 60, 16, Theme.sans), 24, 124, 16, col, Theme.sans, Theme.LEFT);
+        Theme.text(c, Theme.fit(line, Wide.W - 48, 18, Theme.sans), 24, 137, 18, col, Theme.sans, Theme.LEFT);
 
         float gap = 12, w = (Wide.W - 28 - 2 * gap) / 3;
         float l1 = 14, l2 = l1 + w + gap, l3 = l2 + w + gap;
@@ -91,29 +90,29 @@ class DiagPage extends Page {
 
     private void light(Canvas c, Obd o, Obd.Diag d, float l, float w) {
         float x = l + 20, y = TOP + 38;
-        Theme.spaced(c, "CHECK-ENGINE LIGHT", x, y, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "CHECK-ENGINE LIGHT", x, y, 18, Theme.SUB, Theme.bold, 2f);
         boolean on = o.milOn();
         int n = o.milCount();
         Theme.text(c, n < 0 ? "--" : on ? "ON" : "OFF", x, y + 62, 52, n < 0 ? Theme.DIMMER : on ? Theme.GOLD : Theme.GREEN, Theme.bold, Theme.LEFT);
-        Theme.text(c, n < 0 ? "" : n == 0 ? "No stored codes" : n == 1 ? "1 stored code" : n + " stored codes", x, y + 92, 17, Theme.TEXT, Theme.sans, Theme.LEFT);
+        Theme.text(c, n < 0 ? "" : n == 0 ? "No stored codes" : n == 1 ? "1 stored code" : n + " stored codes", x, y + 92, 18, Theme.TEXT, Theme.sans, Theme.LEFT);
         codesButton.set(l + w - 20 - 150, y + 30, l + w - 20, y + 74);
         Theme.button(c, codesButton, true, 12);
-        Theme.text(c, "Fault codes", codesButton.centerX(), codesButton.centerY() + 6, 17, 0xffffffff, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Fault codes", codesButton.centerX(), codesButton.centerY() + 6, 18, 0xffffffff, Theme.sans, Theme.CENTER);
 
         y += 150;
-        Theme.spaced(c, "DRIVEN WITH THE LIGHT ON", x, y, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "DRIVEN WITH THE LIGHT ON", x, y, 18, Theme.SUB, Theme.bold, 2f);
         Theme.text(c, both(km(d.distMil), mins(d.minMil)), x, y + 32, 20, Theme.TEXT, Theme.sans, Theme.LEFT);
 
         y += 84;
-        Theme.spaced(c, "SINCE THE CODES WERE CLEARED", x, y, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "SINCE THE CODES WERE CLEARED", x, y, 18, Theme.SUB, Theme.bold, 2f);
         float yy = y + 32;
         yy = pair(c, "Time", mins(d.minClear), x, yy, w);
         yy = pair(c, "Distance", km(d.distClear), x, yy, w);
         pair(c, "Warm-ups", d.warmups < 0 ? "" : String.valueOf(d.warmups), x, yy, w);
         boolean recent = d.warmups >= 0 && d.warmups < 3 || d.distClear >= 0 && d.distClear < 50;
         if (recent) {
-            Theme.text(c, Theme.fit("Cleared recently, or the ECU lost power: some tests may not have run yet", w - 40, 14, Theme.sans),
-                x, BOTTOM - 20, 14, Theme.GOLD, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit("Cleared recently, or the ECU lost power: some tests may not have run yet", w - 40, 18, Theme.sans),
+                x, BOTTOM - 20, 18, Theme.GOLD, Theme.sans, Theme.LEFT);
         }
     }
 
@@ -121,36 +120,36 @@ class DiagPage extends Page {
 
     private void readiness(Canvas c, Obd.Diag d, float l, float w) {
         float x = l + 20, y = TOP + 38, right = l + w - 20;
-        Theme.spaced(c, "READINESS MONITORS", x, y, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "READINESS MONITORS", x, y, 18, Theme.SUB, Theme.bold, 2f);
         List<ObdCodec.Monitor> since = ObdCodec.monitors(d.since), cycle = ObdCodec.monitors(d.cycle);
         if (since.isEmpty()) {
-            Theme.text(c, "The car does not report them", x, y + 40, 17, Theme.DIM, Theme.sans, Theme.LEFT);
+            Theme.text(c, "The car does not report them", x, y + 40, 18, Theme.DIM, Theme.sans, Theme.LEFT);
             return;
         }
         float cSince = right - 150, cCycle = right - 46;
-        Theme.text(c, "Since clear", cSince, y + 30, 13, Theme.DIM, Theme.sans, Theme.CENTER);
-        Theme.text(c, "This drive", cCycle, y + 30, 13, Theme.DIM, Theme.sans, Theme.CENTER);
+        Theme.text(c, "Since clear", cSince, y + 30, 18, Theme.DIM, Theme.sans, Theme.CENTER);
+        Theme.text(c, "This drive", cCycle, y + 30, 18, Theme.DIM, Theme.sans, Theme.CENTER);
         int notDone = 0;
         float yy = y + 30 + ROW;
         for (ObdCodec.Monitor m : since) {
             if (!m.done) notDone++;
-            Theme.text(c, Theme.fit(m.name, cSince - 60 - x, 17, Theme.sans), x, yy, 17, Theme.TEXT, Theme.sans, Theme.LEFT);
-            Theme.text(c, m.done ? "Ready" : "Not ready", cSince, yy, 16, m.done ? Theme.GREEN : Theme.GOLD, Theme.bold, Theme.CENTER);
+            Theme.text(c, Theme.fit(m.name, cSince - 60 - x, 18, Theme.sans), x, yy, 18, Theme.TEXT, Theme.sans, Theme.LEFT);
+            Theme.text(c, m.done ? "Ready" : "Not ready", cSince, yy, 18, m.done ? Theme.GREEN : Theme.GOLD, Theme.bold, Theme.CENTER);
             ObdCodec.Monitor now = null;
             for (ObdCodec.Monitor k : cycle) if (k.name.equals(m.name)) now = k;
-            Theme.text(c, now == null ? "--" : now.done ? "Done" : "Running", cCycle, yy, 15, now == null ? Theme.DIMMER : now.done ? Theme.GREEN : Theme.SUB,
+            Theme.text(c, now == null ? "--" : now.done ? "Done" : "Running", cCycle, yy, 18, now == null ? Theme.DIMMER : now.done ? Theme.GREEN : Theme.SUB,
                 Theme.sans, Theme.CENTER);
             yy += ROW;
         }
         String sum = notDone == 0 ? "All ready" : notDone == 1 ? "1 not ready: an emissions test may fail" : notDone + " not ready: an emissions test may fail";
-        Theme.text(c, Theme.fit(sum, w - 40, 16, Theme.sans), x, BOTTOM - 20, 16, notDone == 0 ? Theme.GREEN : Theme.GOLD, Theme.bold, Theme.LEFT);
+        Theme.text(c, Theme.fit(sum, w - 40, 18, Theme.sans), x, BOTTOM - 20, 18, notDone == 0 ? Theme.GREEN : Theme.GOLD, Theme.bold, Theme.LEFT);
     }
 
     // ---- the car ----
 
     private void car(Canvas c, Obd o, Obd.Diag d, float l, float w) {
         float x = l + 20, y = TOP + 38;
-        Theme.spaced(c, "THE CAR", x, y, 13, Theme.SUB, Theme.bold, 2f);
+        Theme.spaced(c, "THE CAR", x, y, 18, Theme.SUB, Theme.bold, 2f);
         String vin = d.ident[Obd.VIN];
         float yy = y + 32;
         yy = pair(c, "VIN", vin == null ? "" : vin.isEmpty() ? "Not stored in the ECU" : vin, x, yy, w);
@@ -171,9 +170,9 @@ class DiagPage extends Page {
 
     /** A label and its value on one row; a value the car does not give shows as "--". Returns the next row's y. */
     private float pair(Canvas c, String label, String value, float x, float y, float w) {
-        Theme.text(c, label, x, y, 15, Theme.SUB, Theme.sans, Theme.LEFT);
+        Theme.text(c, label, x, y, 18, Theme.SUB, Theme.sans, Theme.LEFT);
         boolean has = value != null && !value.isEmpty();
-        Theme.text(c, has ? Theme.fit(value, w - 40 - 130, 17, Theme.sans) : "--", x + 130, y, 17, has ? Theme.TEXT : Theme.DIMMER, Theme.sans, Theme.LEFT);
+        Theme.text(c, has ? Theme.fit(value, w - 40 - 130, 18, Theme.sans) : "--", x + 130, y, 18, has ? Theme.TEXT : Theme.DIMMER, Theme.sans, Theme.LEFT);
         return y + ROW;
     }
 

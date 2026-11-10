@@ -216,15 +216,15 @@ final class Permissions extends View {
             RectF b = buttons[i];
             float cy = b.centerY();
             Theme.text(c, it.name, 140, cy - 4, 24, Theme.TEXT, Theme.bold, Theme.LEFT);
-            Theme.text(c, Theme.fit(it.why, 720, 17, Theme.sans), 140, cy + 20, 17, Theme.SUB, Theme.sans, Theme.LEFT);
+            Theme.text(c, Theme.fit(it.why, 720, 18, Theme.sans), 140, cy + 20, 18, Theme.SUB, Theme.sans, Theme.LEFT);
             if (had[i]) {
-                Theme.text(c, "✓ Allowed", b.centerX(), cy + 8, 21, Theme.GREEN, Theme.bold, Theme.CENTER);
+                Theme.text(c, "✓ Allowed", b.centerX(), cy + 8, 22, Theme.GREEN, Theme.bold, Theme.CENTER);
             } else if (blockedBy(i)) {
                 Theme.text(c, "After location", b.centerX(), cy + 7, 18, Theme.DIM, Theme.sans, Theme.CENTER);
             } else {
                 boolean settings = it.files() || refused(it);
                 Theme.button(c, b, !settings, 12);
-                Theme.text(c, settings ? "Open settings" : "Allow", b.centerX(), cy + 8, 21, 0xffffffff,
+                Theme.text(c, settings ? "Open settings" : "Allow", b.centerX(), cy + 8, 22, 0xffffffff,
                     Theme.bold, Theme.CENTER);
             }
         }

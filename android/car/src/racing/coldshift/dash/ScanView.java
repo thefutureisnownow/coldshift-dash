@@ -141,7 +141,7 @@ final class ScanView extends View {
         String[] lines = {"Hold the phone's", "back camera up to", "the convoy's QR code."};
         for (int i = 0; i < lines.length; i++) Theme.text(c, lines[i], 24, 110 + i * 30, 20, Theme.TEXT, Theme.sans, Theme.LEFT);
         if (wasRecording)
-            Theme.text(c, "The dashcam is paused while scanning.", 24, 680, 16, Theme.GOLD, Theme.bold, Theme.LEFT);
+            Theme.text(c, "The dashcam is paused while scanning.", 24, 680, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
         Theme.button(c, CANCEL, false, 12);
         Theme.text(c, "Cancel", CANCEL.centerX(), CANCEL.centerY() + 8, 22, Theme.TEXT, Theme.bold, Theme.CENTER);
         c.restore();

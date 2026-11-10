@@ -38,6 +38,7 @@ public class UI extends View implements Runnable {
     private boolean blank;
     private long awakeUntil;            // woken for a convoy message: no blanking before this
     private boolean swallow;
+    private final Press press = new Press(this);
 
     public UI(Main a) {
         super(a);
@@ -48,6 +49,10 @@ public class UI extends View implements Runnable {
         String[] names = {"media", "maps", "track", "sensors", "dashcam", "log", "convoy", "settings"};
         for (int i = 0; i < all.length; i++) byName.put(names[i], all[i]);
         choosePages();
+        // the page that was showing when the app last closed comes back
+        Page was = byName.get(Prefs.sp(a).getString("last_page", ""));
+        int i = was == null ? -1 : java.util.Arrays.asList(pages).indexOf(was);
+        if (i >= 0) cur = i;
     }
 
     Bitmap loadAsset(String name) {
@@ -159,6 +164,8 @@ public class UI extends View implements Runnable {
         pages[cur].onHide();
         cur = i;
         pages[cur].onShow();
+        for (java.util.Map.Entry<String, Page> e : byName.entrySet())
+            if (e.getValue() == pages[cur]) Prefs.sp(act).edit().putString("last_page", e.getKey()).apply();
         invalidate();
     }
 
@@ -166,7 +173,9 @@ public class UI extends View implements Runnable {
         c.save();
         Screen.begin(c, this);
         float e = Screen.extra(this);                       // the side margins of a screen wider than 16:9
+        press.begin();
         if (blank) {
+            press.end();
             c.drawColor(Color.BLACK);
             c.restore();
             return;
@@ -194,6 +203,7 @@ public class UI extends View implements Runnable {
         }
         topBar(c, e);
         tabBar(c, e);
+        press.end();
         c.restore();
     }
 
@@ -223,7 +233,7 @@ public class UI extends View implements Runnable {
         }
         String title = Profile.title(act);
         if (!title.isEmpty())
-            Theme.text(c, Theme.fit(title, 540 - x, 17, Theme.italic), x + 8, 32, 17, 0xff93a9c8, Theme.italic, Theme.LEFT);
+            Theme.text(c, Theme.fit(title, 540 - x, 18, Theme.italic), x + 8, 32, 18, 0xff93a9c8, Theme.italic, Theme.LEFT);
 
         Dashcam dc = Dashcam.get(act);
         if (dc.recording) {
@@ -240,23 +250,27 @@ public class UI extends View implements Runnable {
             paint.setColor(mk ? Theme.GOLD : 0xaae3b341);
             c.drawRoundRect(rect, 10, 10, paint);
             paint.setStyle(Paint.Style.FILL);
+            Theme.pressed(c, rect, 10);
             String lab = "MARK";
             if (mk) {
                 long sec = (android.os.SystemClock.elapsedRealtime() - dc.markStartReal) / 1000;
                 lab = "END  " + sec / 60 + ":" + (sec % 60 < 10 ? "0" : "") + sec % 60;
             }
-            Theme.text(c, lab, 639, 34, 19, mk ? 0xff05070d : Theme.GOLD, Theme.bold, Theme.CENTER);
+            Theme.text(c, lab, 639, 34, 20, mk ? 0xff05070d : Theme.GOLD, Theme.bold, Theme.CENTER);
         }
 
         float r = 1264 + e;
+        // Android 12 and up shows a green dot in this corner while the camera or microphone is in use
+        if (Api.SDK >= 31 && (Dashcam.get(act).recording || Dashcam.get(act).testing || Dashcam.get(act).shooting
+                || Sound.get(act).listening || Sound.get(act).recording)) r -= 64;
         if (charging) {
-            Theme.text(c, "Charging", r, 33, 19, Theme.TEXT, Theme.sans, Theme.RIGHT);
-            r -= Theme.width("Charging", 19, Theme.sans) + 12;
+            Theme.text(c, "Charging", r, 33, 20, Theme.TEXT, Theme.sans, Theme.RIGHT);
+            r -= Theme.width("Charging", 20, Theme.sans) + 12;
         }
         String b = batteryPct < 0 ? "--%" : batteryPct + "%";
         int bc = batteryPct >= 0 && batteryPct < 15 && !charging ? Theme.BAD : Theme.TEXT;
-        Theme.text(c, b, r, 33, 19, bc, Theme.sans, Theme.RIGHT);
-        r -= Theme.width(b, 19, Theme.sans) + 3;
+        Theme.text(c, b, r, 33, 20, bc, Theme.sans, Theme.RIGHT);
+        r -= Theme.width(b, 20, Theme.sans) + 3;
         if (charging) {
             Theme.bolt(c, r - 16, 14, 24, 0xffffc22e);
             r -= 22;
@@ -264,14 +278,14 @@ public class UI extends View implements Runnable {
         if (!Float.isNaN(batteryTemp)) {           // a hot car matters to a phone: amber from 45, red from 55
             r -= 12;
             String t = Thermal.text(batteryTemp);
-            Theme.text(c, t, r, 33, 19, Thermal.colour(batteryTemp), Theme.sans, Theme.RIGHT);
-            r -= Theme.width(t, 19, Theme.sans);
+            Theme.text(c, t, r, 33, 20, Thermal.colour(batteryTemp), Theme.sans, Theme.RIGHT);
+            r -= Theme.width(t, 20, Theme.sans);
         }
         r -= 12;
         Date now = new Date();
         String d = date.format(now);
-        Theme.text(c, d, r, 31, 13, 0xff8fa3bd, Theme.sans, Theme.RIGHT);
-        r -= Theme.width(d, 13, Theme.sans) + 10;
+        Theme.text(c, d, r, 31, 18, 0xff8fa3bd, Theme.sans, Theme.RIGHT);
+        r -= Theme.width(d, 18, Theme.sans) + 10;
         Theme.text(c, clock.format(now), r, 36, 28, 0xffffffff, Theme.bold, Theme.RIGHT);
     }
 
@@ -288,7 +302,7 @@ public class UI extends View implements Runnable {
             float l = 8 - e + i * (tw + 8);
             rect.set(l, TABY + 9, l + tw, 712);
             Theme.button(c, rect, i == cur, 12);
-            Theme.text(c, pages[i].label(), l + tw / 2, TABY + 52, 21,
+            Theme.text(c, pages[i].label(), l + tw / 2, TABY + 52, 22,
                 i == cur ? 0xffffffff : 0xffa9bcd6, Theme.sans, Theme.CENTER);
             if (pages[i].attention()) {
                 paint.setColor(Theme.GOLD);
@@ -314,6 +328,7 @@ public class UI extends View implements Runnable {
             if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) swallow = false;
             return true;
         }
+        press.touch(e);
         MotionEvent m = MotionEvent.obtain(e);
         m.setLocation(Screen.x(this, e.getX()), Screen.y(this, e.getY()));
         boolean used = false;

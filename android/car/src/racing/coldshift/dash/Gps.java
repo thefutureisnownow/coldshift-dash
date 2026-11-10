@@ -24,7 +24,7 @@ final class Gps implements LocationListener {
     private final LocationManager lm;
     private final List<Listener> listeners = new ArrayList<Listener>();
     private boolean running;
-    private long fakeUntil;
+    private long fakeUntil, savedAt;
     private Location last;
 
     static synchronized Gps get(Context c) {
@@ -65,6 +65,24 @@ final class Gps implements LocationListener {
 
     Location last() { return last; }
 
+    /**
+     * Where the car last was, as {lat, lon}, for opening the map before the first fix: the last fix of
+     * this run, else the one saved from an earlier run, else what Android remembers; null when none.
+     */
+    double[] lastKnown() {
+        if (last != null) return new double[] {last.getLatitude(), last.getLongitude()};
+        String v = Prefs.sp(ctx).getString("last_fix", "");
+        try {
+            String[] p = v.split(",");
+            if (p.length == 2) return new double[] {Double.parseDouble(p[0]), Double.parseDouble(p[1])};
+        } catch (NumberFormatException e) { /* not saved yet */ }
+        try {
+            Location l = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (l != null) return new double[] {l.getLatitude(), l.getLongitude()};
+        } catch (Throwable t) { /* no permission yet */ }
+        return null;
+    }
+
     /** A test position over adb. */
     void fake(Location l) {
         fakeUntil = System.currentTimeMillis() + 15000;
@@ -72,7 +90,12 @@ final class Gps implements LocationListener {
     }
 
     public void onLocationChanged(Location l) {
-        if (System.currentTimeMillis() < fakeUntil) return;    // a test drive is feeding positions
+        long now = System.currentTimeMillis();
+        if (now < fakeUntil) return;                           // a test drive is feeding positions
+        if (now - savedAt > 30000) {                           // real positions only: where the map opens next time
+            savedAt = now;
+            Prefs.sp(ctx).edit().putString("last_fix", l.getLatitude() + "," + l.getLongitude()).apply();
+        }
         dispatch(l);
     }
 
