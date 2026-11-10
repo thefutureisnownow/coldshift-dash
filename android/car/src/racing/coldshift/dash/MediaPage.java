@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,17 +24,17 @@ class MediaPage extends Page {
     private int builtCount = -1;
     private String builtFolder = "";
     private boolean builtAvail = true;
-    private float scroll, fling;
+    private final Scroll list;          // the folder's rows
     private boolean dragList, moved;
     private float downX, downY, lastY;
     private long downT;
-    private VelocityTracker vt;
     private int dragging;            // 1 seek, 2 volume
     private float dragFrac;
     private boolean cardWas = true;
 
     MediaPage(Main a) {
         super(a);
+        list = new Scroll(a);
         lib = Library.get(a);
         pl = Player.get(a);
         art = Art.get(a);
@@ -47,7 +46,7 @@ class MediaPage extends Page {
     @Override String icon() { return "media"; }
 
     @Override int intervalMs() {
-        if (Math.abs(fling) > 0.5f || dragList) return 33;
+        if (dragList) return 33;
         return pl.isPlaying() ? 250 : 1000;
     }
 
@@ -57,19 +56,9 @@ class MediaPage extends Page {
     }
 
     @Override void tick() {
-        if (Math.abs(fling) > 0.5f) {
-            scroll = clamp(scroll - fling);
-            fling *= 0.93f;
-        } else {
-            fling = 0;
-        }
         boolean avail = lib.rootAvailable();
         if (avail && !cardWas && !lib.scanning) lib.scan();
         cardWas = avail;
-    }
-
-    private float clamp(float s) {
-        return Math.max(0, Math.min(s, Math.max(0, contentH() - (LIST_B - LIST_T))));
     }
 
     private float contentH() {
@@ -99,7 +88,6 @@ class MediaPage extends Page {
         builtCount = n;
         builtFolder = folder;
         builtAvail = avail;
-        scroll = clamp(scroll);
     }
 
     // ---- drawing ----
@@ -197,6 +185,8 @@ class MediaPage extends Page {
 
     /** In the list's coordinates; q is how much wider it is, which right-anchored things move by. */
     private void browser(Canvas c) {
+        list.range(contentH(), LIST_B - LIST_T);
+        list.step();
         float q = Q();
         boolean atRoot = folder.equals(lib.root);
         float tx = 817;
@@ -228,7 +218,7 @@ class MediaPage extends Page {
             Theme.text(c, msg, 1031 + q / 2, 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
         }
         Track cur = pl.current();
-        float y = LIST_T - scroll;
+        float y = LIST_T - list.pos;
         for (Library.Entry e : entries) {
             float h = e.dir ? DIR_H : TRK_H;
             if (y + h > LIST_T && y < LIST_B) row(c, e, y, h, cur);
@@ -294,16 +284,13 @@ class MediaPage extends Page {
         int a = e.getAction();
         if (a == MotionEvent.ACTION_DOWN) {
             downX = x; downY = y; lastY = y; downT = System.currentTimeMillis(); moved = false;
-            fling = 0;
             dragging = 0;
             dragList = false;
             if (in(x, y, 80, 372, 712, 432)) { dragging = 1; dragFrac = Math.max(0, Math.min(1, (x - 100) / 591f)); }
             else if (in(x, y, 240, 512, 600, 562)) { dragging = 2; dragFrac = Math.max(0, Math.min(1, (x - 258) / 317f)); pl.setVolume(dragFrac); }
             else if (in(x, y, 803, LIST_T, 1260 + Q(), LIST_B)) {
                 dragList = true;
-                if (vt != null) vt.recycle();
-                vt = VelocityTracker.obtain();
-                vt.addMovement(e);
+                list.down(y);
             }
             return true;
         }
@@ -311,9 +298,8 @@ class MediaPage extends Page {
             if (dragging == 1) dragFrac = Math.max(0, Math.min(1, (x - 100) / 591f));
             else if (dragging == 2) { dragFrac = Math.max(0, Math.min(1, (x - 258) / 317f)); pl.setVolume(dragFrac); }
             else if (dragList) {
-                if (vt != null) vt.addMovement(e);
                 if (Math.abs(y - downY) > 12) moved = true;
-                if (moved) { scroll = clamp(scroll - (y - lastY)); }
+                list.move(y);
                 lastY = y;
             }
             return true;
@@ -323,13 +309,7 @@ class MediaPage extends Page {
             if (dragging != 0) { dragging = 0; return true; }
             if (dragList) {
                 dragList = false;
-                if (moved && vt != null) {
-                    vt.addMovement(e);
-                    vt.computeCurrentVelocity(1000);
-                    fling = vt.getYVelocity() / 30f;
-                    if (Math.abs(fling) < 3) fling = 0;
-                }
-                if (vt != null) { vt.recycle(); vt = null; }
+                if (a == MotionEvent.ACTION_UP) list.up(); else list.cancel();
                 if (!moved && a == MotionEvent.ACTION_UP) listTap(x, y);
                 return true;
             }
@@ -354,7 +334,7 @@ class MediaPage extends Page {
             String p = new java.io.File(folder).getParent();
             folder = p == null || !p.startsWith(lib.root) ? lib.root : p;
             pl.browse = folder;
-            scroll = 0;
+            list.reset();
             return;
         }
         if (!entries.isEmpty()) {
@@ -364,14 +344,14 @@ class MediaPage extends Page {
     }
 
     private void listTap(float x, float y) {
-        float top = LIST_T - scroll;
+        float top = LIST_T - list.pos;
         for (Library.Entry e : entries) {
             float h = e.dir ? DIR_H : TRK_H;
             if (y >= top && y < top + h) {
                 if (e.dir) {
                     folder = e.path;
                     pl.browse = folder;
-                    scroll = 0;
+                    list.reset();
                 } else {
                     List<Track> here = new ArrayList<Track>();
                     int start = 0;

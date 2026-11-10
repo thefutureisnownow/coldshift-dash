@@ -44,7 +44,7 @@ class SettingsPage extends Page {
 
     private final SoundSettings sound;
 
-    SettingsPage(Main a, UI ui) { super(a); this.ui = ui; sound = new SoundSettings(a); }
+    SettingsPage(Main a, UI ui) { super(a); this.ui = ui; sound = new SoundSettings(a); list = new Scroll(a); }
 
     String label() { return "Settings"; }
     @Override String icon() { return "settings"; }
@@ -222,7 +222,8 @@ class SettingsPage extends Page {
     private int dMode, dRole;
     private boolean scanned, armed, dragged, showUnnamed;
     private int unnamed;                                    // devices left out of the list for having no name and no kind
-    private float listScroll, listMax, downX, downY, dragFrom;
+    private float downX, downY;
+    private final Scroll list;          // the devices to choose from
     private String note = "";
     private long noteUntil;
     private DeviceTest test;
@@ -230,7 +231,7 @@ class SettingsPage extends Page {
     private void enterDevices() {
         dMode = D_MAIN;
         scanned = false;
-        listScroll = 0;
+        list.reset();
     }
 
     private void leaveDevices() {
@@ -425,8 +426,9 @@ class SettingsPage extends Page {
         String problem = d.problem();
         Theme.text(c, Theme.fit(problem.isEmpty() ? hint : problem, Wide.rx(RIGHT) - LEFT, 18, Theme.sans), LEFT, 238, 18,
             problem.isEmpty() ? Theme.DIM : Theme.GOLD, Theme.sans, Theme.LEFT);
-        listMax = Math.max(0, list.size() * LIST_ROW - (LIST_B - LIST_T));
-        listScroll = Math.max(0, Math.min(listScroll, listMax));
+        this.list.range(list.size() * LIST_ROW, LIST_B - LIST_T);
+        this.list.step();
+        float listScroll = this.list.pos;
         if (list.isEmpty()) {
             Theme.text(c, d.scanning() ? "Looking for devices…" : "No devices found. Switch the device on and tap Scan again.",
                 Wide.mid(LEFT, RIGHT), 420, 20, Theme.SUB, Theme.sans, Theme.CENTER);
@@ -440,12 +442,7 @@ class SettingsPage extends Page {
             choiceRow(c, d, list.get(i), new RectF(LEFT, top, Wide.rx(RIGHT), top + LIST_ROW - 6));
         }
         c.restore();
-        if (listMax > 0) {                                          // where in the list
-            float h = (LIST_B - LIST_T) * (LIST_B - LIST_T) / (listMax + LIST_B - LIST_T);
-            float y = LIST_T + (LIST_B - LIST_T - h) * listScroll / listMax;
-            Theme.P.setColor(Theme.accent(0x66));
-            c.drawRoundRect(new RectF(Wide.rx(RIGHT) + 6, y, Wide.rx(RIGHT) + 10, y + h), 2, 2, Theme.P);
-        }
+        this.list.bar(c, Wide.rx(RIGHT) + 6, LIST_T, LIST_B);                 // where in the list
     }
 
     private void choiceRow(Canvas c, Devices d, Devices.Found f, RectF r) {
@@ -528,18 +525,19 @@ class SettingsPage extends Page {
             dragged = false;
             downX = x;
             downY = y;
-            dragFrom = listScroll;
+            if (dMode == D_CHOOSE && inList(y)) list.down(y);
             return;
         }
         if (!armed) return;
         if (a == MotionEvent.ACTION_MOVE) {
-            if (dMode == D_CHOOSE && inList(downY)) {
-                if (Math.abs(y - downY) > TAP_SLOP) dragged = true;
-                if (dragged) listScroll = Math.max(0, Math.min(listMax, dragFrom - (y - downY)));
+            if (list.held()) {
+                list.move(y);
+                if (list.dragged()) dragged = true;
             }
             return;
         }
         armed = false;
+        if (list.held()) { if (a == MotionEvent.ACTION_UP) list.up(); else list.cancel(); }
         if (a != MotionEvent.ACTION_UP || dragged) return;
         Devices d = Devices.get(act);
         if (dMode == D_CHOOSE) chooseTap(d, x, y);
@@ -567,7 +565,7 @@ class SettingsPage extends Page {
             if (chooseButton(r).contains(x, y)) {
                 dRole = role;
                 dMode = D_CHOOSE;
-                listScroll = 0;
+                list.reset();
                 note = "";
                 if (!d.scanning() && d.problem().isEmpty()) d.scan(SCAN_MS);
             } else if (has && clearButton(r).contains(x, y)) {
@@ -582,10 +580,10 @@ class SettingsPage extends Page {
     private void chooseTap(Devices d, float x, float y) {
         if (doneButton().contains(x, y)) { dMode = D_MAIN; return; }
         if (scanButton().contains(x, y)) { if (!d.scanning()) d.scan(SCAN_MS); return; }
-        if (unnamedButton().contains(x, y)) { showUnnamed = !showUnnamed; listScroll = 0; return; }
+        if (unnamedButton().contains(x, y)) { showUnnamed = !showUnnamed; list.reset(); return; }
         if (!inList(y) || x < LEFT || x > Wide.rx(RIGHT)) return;
         java.util.List<Devices.Found> list = choices(d, dRole);
-        int i = (int) ((y - LIST_T + listScroll) / LIST_ROW);
+        int i = (int) ((y - LIST_T + this.list.pos) / LIST_ROW);
         if (i < 0 || i >= list.size()) return;
         Devices.Found f = list.get(i);
         if (dRole == Devices.TYRES) {

@@ -29,22 +29,22 @@ class LogPage extends Page implements Logbook.Listener {
     private static final RectF[] FILTERS = {Wide.right(new RectF(922, 74, 1026, 124)),
         Wide.right(new RectF(1034, 74, 1138, 124)), Wide.right(new RectF(1146, 74, 1250, 124))};
     private static final String[] FILTER_NAMES = {"All", "Trips", "Fuel"};
-    private static final RectF NEWER = new RectF(598, 553, 790, 607), OLDER = Wide.right(new RectF(1058, 553, 1250, 607));
     private static final RectF BACK = new RectF(598, 553, 790, 607), DELETE = new RectF(802, 553, 998, 607);
     private static final RectF SAVE = Wide.right(new RectF(1010, 553, 1250, 607));
     private static final RectF BUSINESS = new RectF(598, 296, 850, 352), PRIVATE = new RectF(862, 296, 1114, 352);
     private static final RectF PURPOSE = Wide.stretch(new RectF(598, 420, 1250, 476));
     private static final RectF TITLE = Wide.stretch(new RectF(590, 76, 1250, 122));
     private static final RectF FULL = new RectF(590, 442, 915, 494), MISSED = Wide.stretch(new RectF(927, 442, 1250, 494));
-    private static final float ROWS_TOP = 128, ROW_H = 66, FIELD_TOP = 130, FIELD_H = 62;
-    private static final int ROWS = 6;
+    private static final float ROWS_TOP = 132, ROWS_BOTTOM = 614, ROW_H = 72, FIELD_TOP = 130, FIELD_H = 62;
     private static final String[] SERVICES = {"Service", "Oil change", "Tyres", "Brakes", "Battery", "Licence renewal",
         "Roadworthy", "Wash"};
 
     private final LogStore store;
     private final Logbook book;
     private Mode mode = Mode.LIST;
-    private int filter, first;
+    private int filter;
+    private final Scroll scroll;        // the list of entries
+    private boolean inList;             // the finger went down in it
     private List<JSONObject> shown = new ArrayList<JSONObject>();
     private JSONObject selected, pending;
     private boolean confirmDelete;
@@ -66,6 +66,7 @@ class LogPage extends Page implements Logbook.Listener {
 
     LogPage(Main a) {
         super(a);
+        scroll = new Scroll(a);
         store = LogStore.get(a);
         book = Logbook.get(a);
         book.setListener(this);
@@ -129,7 +130,6 @@ class LogPage extends Page implements Logbook.Listener {
             if (filter == 0 || (filter == 1 && t.equals("trip")) || (filter == 2 && t.equals("fuel"))) out.add(o);
         }
         shown = out;
-        if (first >= shown.size()) first = 0;
         factor = store.factor();
         readingAt = store.lastReadingTime();
         List<double[]> c = store.consumption();
@@ -208,10 +208,17 @@ class LogPage extends Page implements Logbook.Listener {
                 i == filter ? 0xffffffff : Theme.SUB, Theme.sans, Theme.CENTER);
         }
         SimpleDateFormat when = new SimpleDateFormat("EEE d MMM  HH:mm", Locale.US);
-        for (int i = 0; i < ROWS && first + i < shown.size(); i++) {
-            JSONObject o = shown.get(first + i);
+        float bottom = listBottom();
+        scroll.range(shown.size() * ROW_H - 8, bottom - ROWS_TOP);
+        scroll.step();
+        c.save();
+        c.clipRect(586, ROWS_TOP, Wide.rx(1254), bottom);
+        for (int i = 0; i < shown.size(); i++) {
+            float top = ROWS_TOP + i * ROW_H - scroll.pos;
+            if (top + ROW_H < ROWS_TOP || top > bottom) continue;
+            JSONObject o = shown.get(i);
             String t = o.optString("type");
-            RectF r = new RectF(590, ROWS_TOP + i * ROW_H, Wide.rx(1250), ROWS_TOP + i * ROW_H + ROW_H - 8);
+            RectF r = new RectF(590, top, Wide.rx(1250), top + ROW_H - 8);
             Theme.button(c, r, false, 10);
             String title, sub = when.format(new Date(o.optLong("time"))), right = "";
             int rightCol = 0xffffffff;
@@ -247,6 +254,8 @@ class LogPage extends Page implements Logbook.Listener {
             Theme.text(c, right, Wide.rx(1234), r.top + 26, 20, rightCol, Theme.bold, Theme.RIGHT);
             if (biz) Theme.spaced(c, "BUSINESS", Wide.rx(1234) - rw - 92, r.top + 25, 18, Theme.GOLD, Theme.bold, 1.5f);
         }
+        c.restore();
+        scroll.bar(c, Wide.rx(1254), ROWS_TOP, bottom);
         if (shown.isEmpty()) {
             String[] lines = {
                 "Trips appear here by themselves once the car moves off.",
@@ -258,18 +267,13 @@ class LogPage extends Page implements Logbook.Listener {
             for (int i = 0; i < lines.length; i++)
                 Theme.text(c, lines[i], 598, 160 + i * 30, 18, Theme.TEXT, Theme.sans, Theme.LEFT);
         }
-        if (first > 0) {
-            Theme.button(c, NEWER, false, 12);
-            Theme.text(c, "Newer", NEWER.centerX(), NEWER.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
-        }
-        if (first + ROWS < shown.size()) {
-            Theme.button(c, OLDER, false, 12);
-            Theme.text(c, "Older", OLDER.centerX(), OLDER.centerY() + 7, 20, Theme.TEXT, Theme.sans, Theme.CENTER);
-        }
-        if (!shown.isEmpty()) Theme.text(c, (first + 1) + "–" + Math.min(first + ROWS, shown.size()) + " of " + shown.size(),
-            Wide.mid(790, 1058), 587, 18, Theme.SUB, Theme.sans, Theme.CENTER);
-        if (!note.isEmpty()) Theme.text(c, note, 598, 540, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
+        if (!note.isEmpty()) Theme.text(c, note, 598, 600, 18, Theme.GOLD, Theme.bold, Theme.LEFT);
     }
+
+    /** Where the list ends: the panel's foot, or above a note when there is one. */
+    private float listBottom() { return note.isEmpty() ? ROWS_BOTTOM : 570; }
+
+    private boolean listShowing() { return mode != Mode.FORM && !(mode == Mode.TRIP && selected != null); }
 
     private void drawDue(Canvas c, RectF r, LogStore.Due d) {
         JSONObject rem = d.reminder;
@@ -391,8 +395,21 @@ class LogPage extends Page implements Logbook.Listener {
     // ---- touch ----
 
     @Override boolean touch(MotionEvent e) {
-        if (e.getAction() != MotionEvent.ACTION_UP) return true;
         float x = e.getX(), y = e.getY();
+        int a = e.getAction();
+        // the list: a drag scrolls it, and only a finger that stayed put taps a row
+        if (a == MotionEvent.ACTION_DOWN) {
+            inList = listShowing() && x >= 586 && x <= Wide.rx(1254) && y >= ROWS_TOP && y <= listBottom();
+            if (inList) scroll.down(y);
+            return true;
+        }
+        if (inList) {
+            if (a == MotionEvent.ACTION_MOVE) { scroll.move(y); return true; }
+            inList = false;
+            if (a != MotionEvent.ACTION_UP) { scroll.cancel(); return true; }
+            if (!scroll.up()) return true;
+        }
+        if (a != MotionEvent.ACTION_UP) return true;
         if (ODO.contains(x, y) || ADD_ODO.contains(x, y)) {
             newReading();
         } else if (pending != null && LOG_PENDING.contains(x, y)) {
@@ -424,16 +441,15 @@ class LogPage extends Page implements Logbook.Listener {
         for (int i = 0; i < FILTERS.length; i++) {
             if (FILTERS[i].contains(x, y)) {
                 filter = i;
-                first = 0;
+                scroll.reset();
                 refresh();
                 return;
             }
         }
-        if (NEWER.contains(x, y) && first > 0) first = Math.max(0, first - ROWS);
-        else if (OLDER.contains(x, y) && first + ROWS < shown.size()) first += ROWS;
-        for (int i = 0; i < ROWS && first + i < shown.size(); i++) {
-            if (x >= 590 && x <= Wide.rx(1250) && y >= ROWS_TOP + i * ROW_H && y <= ROWS_TOP + i * ROW_H + ROW_H - 8) {
-                JSONObject o = shown.get(first + i);
+        if (x < 590 || x > Wide.rx(1250) || y < ROWS_TOP || y > listBottom()) return;
+        for (int i = (int) ((y - ROWS_TOP + scroll.pos) / ROW_H); i >= 0 && i < shown.size(); i = -1) {
+            if (y - ROWS_TOP + scroll.pos - i * ROW_H <= ROW_H - 8) {
+                JSONObject o = shown.get(i);
                 confirmDelete = false;
                 if (o.optString("type").equals("due")) {
                     // done: a service of that name, which starts the reminder again
@@ -706,7 +722,7 @@ class LogPage extends Page implements Logbook.Listener {
         if (wasPending) book.clearPending();
         mode = selected != null ? Mode.TRIP : Mode.LIST;
         filter = 0;
-        first = 0;
+        scroll.reset();
         refresh();
     }
 

@@ -48,13 +48,15 @@ class ObdPage extends Page {
     private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
     private int view = LIVE;
     private boolean confirming, armed, dragged;
-    private float scroll, downX, downY, dragFrom, maxScroll;
+    private float downX, downY;
+    private final Scroll scroll;        // the fault codes
 
     private int livePage;
     private boolean shown;
 
     ObdPage(Main a) {
         super(a);
+        scroll = new Scroll(a);
         livePage = Math.max(0, Math.min(PAGES - 1, Prefs.sp(a).getInt(PAGE_KEY, 0)));
     }
 
@@ -79,7 +81,7 @@ class ObdPage extends Page {
     void showCodes() {
         Obd o = Obd.get(act);
         view = CODES;
-        scroll = 0;
+        scroll.reset();
         if (o.connected()) o.readCodes();
     }
 
@@ -312,10 +314,10 @@ class ObdPage extends Page {
             Theme.text(c, o.codesState() == Obd.CODES_FAILED ? "Could not read the codes" : o.codesState() == Obd.CODES_READING ? "Reading\u2026" : "Tap Read again",
                 Wide.W / 2, 340, 24, Theme.SUB, Theme.sans, Theme.CENTER);
         }
-        maxScroll = Math.max(0, list.size() * ROW - (LIST_B - LIST_T - 8));
-        scroll = Math.max(0, Math.min(maxScroll, scroll));
+        scroll.range(list.size() * ROW, LIST_B - LIST_T - 8);
+        scroll.step();
         for (int i = 0; i < list.size(); i++) {
-            float y = LIST_T + 4 + i * ROW - scroll;
+            float y = LIST_T + 4 + i * ROW - scroll.pos;
             if (y + ROW < LIST_T || y > LIST_B) continue;
             Obd.Code k = list.get(i);
             Theme.text(c, k.code, 36, y + 35, 26, Theme.GOLD, Theme.bold, Theme.LEFT);
@@ -404,18 +406,19 @@ class ObdPage extends Page {
             dragged = false;
             downX = x;
             downY = y;
-            dragFrom = scroll;
+            if (view == CODES && !confirming && y > LIST_T && y < LIST_B) scroll.down(y);
             return true;
         }
         if (!armed) return false;
         if (a == MotionEvent.ACTION_MOVE) {
-            if (view == CODES && !confirming && downY > LIST_T && downY < LIST_B) {
-                if (Math.abs(y - downY) > TAP_SLOP) dragged = true;
-                if (dragged) scroll = Math.max(0, Math.min(maxScroll, dragFrom - (y - downY)));
+            if (scroll.held()) {
+                scroll.move(y);
+                if (scroll.dragged()) dragged = true;
             }
             return true;
         }
         armed = false;
+        if (scroll.held()) { if (a == MotionEvent.ACTION_UP) scroll.up(); else scroll.cancel(); }
         if (a != MotionEvent.ACTION_UP || dragged) return true;
         float dx = x - downX;
         if (view == LIVE && !confirming && Obd.get(act).state() != Obd.NONE && Math.abs(dx) > SWIPE && Math.abs(dx) > 1.5f * Math.abs(y - downY)) {
@@ -444,7 +447,7 @@ class ObdPage extends Page {
             }
             if (FAULTS.contains(x, y)) {
                 view = CODES;
-                scroll = 0;
+                scroll.reset();
                 if (o.connected()) o.readCodes();
             } else if (LOG_CHIP.contains(x, y)) {
                 view = LOG;

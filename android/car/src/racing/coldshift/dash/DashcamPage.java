@@ -44,7 +44,7 @@ class DashcamPage extends Page implements SensorEventListener {
     private List<MarkInfo> marks = new ArrayList<MarkInfo>();
     private long used, free;
     private int refreshTicks;
-    private float scroll;
+    private final Scroll list;          // the clips, marks, trips or camera options, whichever shows
     private boolean dragging, moved;
     private float downX, downY, lastY;
     private String armed;
@@ -52,6 +52,7 @@ class DashcamPage extends Page implements SensorEventListener {
 
     DashcamPage(Main a) {
         super(a);
+        list = new Scroll(a);
         dash = Dashcam.get(a);
     }
 
@@ -120,7 +121,7 @@ class DashcamPage extends Page implements SensorEventListener {
         if (i == tab) return;
         if (tab == TAB_PREVIEW) stopPreview();
         tab = i;
-        scroll = 0;
+        list.reset();
         armed = null;
         if (tab == TAB_PREVIEW) startPreview();
         if (tab == TAB_CAMERA) dash.loadCameraOptions();
@@ -255,25 +256,9 @@ class DashcamPage extends Page implements SensorEventListener {
 
     @Override boolean wide() { return true; }
 
-    // a list let go while moving carries on and slows (a fling)
-    private float vel;                  // layout px per second, down the list
-    private long velAt, flingAt;
-
-    private void fling() {
-        if (dragging || vel == 0) return;
-        long now = SystemClock.uptimeMillis();
-        float dt = Math.min(50, now - flingAt);
-        flingAt = now;
-        float to = clampScroll(scroll + vel * dt / 1000f);
-        boolean stopped = to == scroll;
-        scroll = to;
-        vel *= (float) Math.pow(0.996, dt);
-        if (stopped || Math.abs(vel) < 40) vel = 0;
-        else act.ui().postInvalidateDelayed(16);
-    }
-
     void draw(Canvas c) {
-        fling();
+        list.range(contentH(), LIST_B - LIST_T);
+        list.step();
         status(c);
         right(c);
     }
@@ -395,7 +380,7 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.text(c, "No recordings yet", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
-        float y = LIST_T - scroll;
+        float y = LIST_T - list.pos;
         for (Clip k : clips) {
             if (y + ROW_H > LIST_T && y < LIST_B) clipRow(c, k, y);
             y += ROW_H;
@@ -434,7 +419,7 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.text(c, "No marks yet. Tap MARK while recording to log a stretch.", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
-        float y = LIST_T - scroll;
+        float y = LIST_T - list.pos;
         for (MarkInfo m : marks) {
             if (y + ROW_H > LIST_T && y < LIST_B) markRow(c, m, y);
             y += ROW_H;
@@ -468,7 +453,7 @@ class DashcamPage extends Page implements SensorEventListener {
             Theme.text(c, "No trips yet. A trip is a recording session.", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
             return;
         }
-        float y = LIST_T - scroll;
+        float y = LIST_T - list.pos;
         for (JSONObject t : trips) {
             if (y + ROW_H > LIST_T && y < LIST_B) {
                 long dur = t.optLong("dur");
@@ -682,7 +667,7 @@ class DashcamPage extends Page implements SensorEventListener {
         c.save();
         c.clipRect(561, CAM_T, Wide.rx(1260), LIST_B);
         if (all.isEmpty()) Theme.text(c, "Reading the camera\u2026", Wide.mid(561, 1260), 380, 18, Theme.SUB, Theme.sans, Theme.CENTER);
-        float y = CAM_T - scroll;
+        float y = CAM_T - list.pos;
         for (CameraOptions.Opt o : all) {
             if (y + SET_H > CAM_T && y < LIST_B) {
                 Theme.text(c, Theme.fit(o.label, Wide.rx(TEST_L) - 10 - 575, 20, Theme.sans), 575, y + 39, 20, 0xffe8eef7, Theme.sans, Theme.LEFT);
@@ -702,7 +687,7 @@ class DashcamPage extends Page implements SensorEventListener {
         }
         if (y < CAM_T || y > LIST_B) return;
         List<CameraOptions.Opt> all = dash.cameraOptions;
-        int i = (int) ((y - CAM_T + scroll) / SET_H);
+        int i = (int) ((y - CAM_T + list.pos) / SET_H);
         if (i < 0 || i >= all.size()) return;
         if (x >= Wide.rx(TEST_L) && x < Wide.rx(SET_L) - 5) CameraOptions.toggleTest(act, all, all.get(i));
         else if (x >= Wide.rx(SET_L) - 5 && x <= Wide.rx(1246)) CameraOptions.cycle(act, all.get(i));
@@ -748,34 +733,25 @@ class DashcamPage extends Page implements SensorEventListener {
             : tab == TAB_CAMERA ? dash.cameraOptions.size() * SET_H + (CAM_T - LIST_T) : 0;
     }
 
-    private float clampScroll(float s) {
-        return Math.max(0, Math.min(s, Math.max(0, contentH() - (LIST_B - LIST_T))));
-    }
-
     @Override boolean touch(MotionEvent e) {
         float x = e.getX(), y = e.getY();
         int a = e.getAction();
         if (a == MotionEvent.ACTION_DOWN) {
             downX = x; downY = y; lastY = y; moved = false;
-            vel = 0;                                            // a touch stops a list that is still moving
-            velAt = SystemClock.uptimeMillis();
             dragging = tab != TAB_SETTINGS && tab != TAB_PREVIEW && tab != TAB_INTERIOR && in(x, y, 561, LIST_T, Wide.rx(1260), LIST_B);
+            if (dragging) list.down(y);
             return true;
         }
         if (a == MotionEvent.ACTION_MOVE && dragging) {
             if (Math.abs(y - downY) > 12) moved = true;
-            if (moved) scroll = clampScroll(scroll - (y - lastY));
-            long now = SystemClock.uptimeMillis();
-            if (now > velAt) vel = 0.5f * vel + 0.5f * (-(y - lastY) * 1000f / (now - velAt));
-            velAt = now;
+            list.move(y);
             lastY = y;
             return true;
         }
         if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) {
             boolean wasDrag = dragging;
             dragging = false;
-            if (!moved || Math.abs(vel) < 250 || SystemClock.uptimeMillis() - velAt > 120) vel = 0;
-            flingAt = SystemClock.uptimeMillis();
+            if (wasDrag) { if (a == MotionEvent.ACTION_UP) list.up(); else list.cancel(); }
             if (a == MotionEvent.ACTION_UP && !moved) tap(x, y, wasDrag);
         }
         return true;
@@ -802,7 +778,7 @@ class DashcamPage extends Page implements SensorEventListener {
             return;
         }
         if (tab == TAB_MARKS && inList) {
-            int idx = (int) ((y - LIST_T + scroll) / ROW_H);
+            int idx = (int) ((y - LIST_T + list.pos) / ROW_H);
             if (idx < 0 || idx >= marks.size()) return;
             MarkInfo m = marks.get(idx);
             if (m.open) return;
@@ -814,7 +790,7 @@ class DashcamPage extends Page implements SensorEventListener {
             return;
         }
         if (tab == TAB_CLIPS && inList) {
-            int idx = (int) ((y - LIST_T + scroll) / ROW_H);
+            int idx = (int) ((y - LIST_T + list.pos) / ROW_H);
             if (idx < 0 || idx >= clips.size()) return;
             Clip k = clips.get(idx);
             if (dash.recording && k.file.getName().equals(dash.clipName)) return;
