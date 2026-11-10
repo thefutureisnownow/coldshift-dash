@@ -12,6 +12,7 @@ final class DashPrefs {
     static final int[] Q_W = {1920, 1920, 1280}, Q_H = {1080, 1080, 720}, Q_KBPS = {8000, 5000, 4000};
     static final int[] CAP_GB = {0, 2, 4, 8, 16};
     static final int[] GRACE_SEC = {30, 60, 120};
+    static final int[] TEST_MIN = {3, 5, 10, 15, 20, 30};
 
     private static SharedPreferences sp(Context c) { return Prefs.sp(c); }
 
@@ -33,6 +34,9 @@ final class DashPrefs {
     static void toggleDeleteOldest(Context c) { sp(c).edit().putBoolean("dc_delete_oldest", !deleteOldest(c)).apply(); }
     static void cycleGrace(Context c) { sp(c).edit().putInt("dc_grace", (graceIdx(c) + 1) % GRACE_SEC.length).apply(); }
     static void toggleAuto(Context c) { sp(c).edit().putBoolean("dc_auto", !autoStart(c)).apply(); }
+
+    static int testMinutes(Context c) { return TEST_MIN[sp(c).getInt("dc_test_min", 2)]; }
+    static void cycleTestMinutes(Context c) { sp(c).edit().putInt("dc_test_min", (sp(c).getInt("dc_test_min", 2) + 1) % TEST_MIN.length).apply(); }
 
     static int rotation(Context c) { return sp(c).getInt("dc_rotation", 1); }
     static void setRotation(Context c, int r) { sp(c).edit().putInt("dc_rotation", r).apply(); }

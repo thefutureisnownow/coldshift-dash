@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -78,6 +79,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     private MediaRecorder rec;
     private File curFile;
     private FileWriter srt;
+    private final GyroLog gyro;
     private int cue;
     private boolean userStopped, stopping, locationOn, blocked, prevPlugged = true;
     private long nextAutoTry;
@@ -105,6 +107,8 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         int points;
     }
     private int retries;
+    /** Two-channel sound failed to start since recording began: the clips go on in mono. */
+    private boolean monoOnly;
     private long gpsOffset;
     private Location prevTrip;
     private FileWriter csv;
@@ -112,8 +116,35 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     private final SimpleDateFormat nameFmt = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US);
     private final SimpleDateFormat srtFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
+    // ---- what the camera offers, and the test drive that tries it ----
+
+    /** How long each setting is filmed for in a test drive. */
+    private static final int TEST_HOLD_MS = 20000;
+    /** The camera's choices, from the last time it was open (CameraOptions). */
+    volatile List<CameraOptions.Opt> cameraOptions = new ArrayList<CameraOptions.Opt>();
+    /** Settings the camera refused when last opened, or "". */
+    volatile String cameraRejected = "";
+    volatile boolean testing;
+    private boolean optionsDumped;
+
+    private static final class Test {
+        List<CameraOptions.Variant> variants;
+        int idx, minutes;
+        long endAt;
+        File file;
+        JSONArray clips = new JSONArray();
+        long startWall;
+
+        /** The saved settings between every change, so each is seen against the same road just before it. */
+        CameraOptions.Variant current() {
+            return idx % 2 == 0 ? variants.get(0) : variants.get(1 + (idx / 2) % (variants.size() - 1));
+        }
+    }
+    private Test test;
+
     private Dashcam(Context c) {
         ctx = c;
+        gyro = new GyroLog(c);
         thread = new HandlerThread("dashcam");
         thread.start();
         h = new Handler(thread.getLooper());
@@ -229,6 +260,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
     void delete(Clip c) {
         c.file.delete();
         c.sidecar().delete();
+        c.gyroLog().delete();
     }
 
     void deleteClip(final Clip c) { h.post(new DeleteJob(this, c)); }
@@ -254,10 +286,11 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         if (lock == isLocked) return f;
         String base = n.substring(0, n.length() - (isLocked ? 6 : 4));
         File nf = new File(f.getParentFile(), base + (lock ? "_L.mp4" : ".mp4"));
-        File srtOld = new File(f.getParentFile(), n.substring(0, n.length() - 4) + ".srt");
-        File srtNew = new File(f.getParentFile(), nf.getName().substring(0, nf.getName().length() - 4) + ".srt");
         if (f.renameTo(nf)) {
-            if (srtOld.exists()) srtOld.renameTo(srtNew);
+            for (String ext : new String[] {".srt", ".gcsv"}) {
+                File old = new File(f.getParentFile(), n.substring(0, n.length() - 4) + ext);
+                if (old.exists()) old.renameTo(new File(f.getParentFile(), nf.getName().substring(0, nf.getName().length() - 4) + ext));
+            }
             return nf;
         }
         return f;
@@ -313,6 +346,8 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             if (p.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
                 p.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
             cam.setParameters(p);
+            applyCameraOptions();
+            readCameraOptions();
             st = new SurfaceTexture(10);
             cam.setPreviewTexture(st);
             cam.startPreview();
@@ -323,6 +358,108 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             closeCamera();
             return false;
         }
+    }
+
+    /** One at a time, so a setting the camera refuses doesn't take the others with it. */
+    private void applyCameraOptions() {
+        Map<String, String> want = CameraOptions.saved(ctx);
+        if (test != null) want.putAll(test.current().settings);
+        StringBuilder refused = new StringBuilder();
+        for (Map.Entry<String, String> e : want.entrySet()) {
+            try {
+                Camera.Parameters p = cam.getParameters();
+                p.set(e.getKey(), e.getValue());
+                cam.setParameters(p);
+            } catch (RuntimeException x) {
+                refused.append(refused.length() == 0 ? "" : ", ").append(e.getKey());
+            }
+        }
+        cameraRejected = refused.toString();
+    }
+
+    private void readCameraOptions() {
+        try {
+            String flat = cam.getParameters().flatten();
+            cameraOptions = CameraOptions.parse(flat);
+            File d = dir();
+            if (!optionsDumped && d != null) {         // the camera's whole list, for looking at from the computer
+                optionsDumped = true;
+                FileWriter w = new FileWriter(new File(d, "camera_options_" + android.os.Build.MODEL.replaceAll("[^A-Za-z0-9]", "_") + ".txt"));
+                w.write(flat.replace(";", "\n"));
+                w.close();
+            }
+        } catch (Exception e) { /* the last list stands */ }
+    }
+
+    /** For the Camera tab when nothing has opened the camera yet. Leaves it as it was. */
+    void loadCameraOptions() {
+        h.post(new Runnable() {
+            public void run() {
+                if (recording || rec != null || scanning || shooting) return;
+                boolean wasShut = cam == null;
+                if (wasShut && !openCamera()) return;
+                readCameraOptions();
+                if (wasShut) closeCamera();
+            }
+        });
+    }
+
+    /** Starts a test drive of what's ticked on the Camera tab. */
+    void startTest(final int minutes) {
+        h.post(new Runnable() {
+            public void run() {
+                if (recording) doStop("Stopped");
+                List<CameraOptions.Variant> v = CameraOptions.variants(ctx, cameraOptions);
+                if (v.size() < 2) { status = "Tick something to test on the Camera tab"; return; }
+                File d = dir();
+                if (d == null) { status = "No storage available"; return; }
+                Test t = new Test();
+                t.variants = v;
+                t.minutes = minutes;
+                t.startWall = wallNow();
+                t.endAt = SystemClock.elapsedRealtime() + minutes * 60000L;
+                File tests = new File(d, "tests");
+                tests.mkdirs();
+                t.file = new File(tests, "test_" + nameFmt.format(new Date(t.startWall)) + ".json");
+                test = t;
+                testing = true;
+                userStopped = false;
+                blocked = false;
+                doStart();
+                if (!recording) endTest();
+            }
+        });
+    }
+
+    private void endTest() {
+        if (test != null) writeTest();
+        test = null;
+        testing = false;
+    }
+
+    private void writeTest() {
+        Test t = test;
+        try {
+            JSONObject o = new JSONObject();
+            o.put("model", android.os.Build.MODEL);
+            o.put("started", t.startWall);
+            o.put("minutes", t.minutes);
+            o.put("hold_s", TEST_HOLD_MS / 1000);
+            o.put("clips", t.clips);
+            FileWriter w = new FileWriter(t.file);
+            w.write(o.toString(1));
+            w.close();
+        } catch (Exception e) { android.util.Log.w("Dashcam", "test log: " + e); }
+    }
+
+    /** The next setting. False when the drive is over or the camera won't open. */
+    private boolean nextTestClip() {
+        if (SystemClock.elapsedRealtime() >= test.endAt) { doStop("Test drive finished"); return false; }
+        test.idx++;
+        closeCamera();                                  // a stabilisation setting only takes before the preview starts
+        if (openCamera()) return true;
+        doStop("Camera unavailable");
+        return false;
     }
 
     private void closeCamera() {
@@ -347,10 +484,12 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         if (recording) return;
         stopping = false;
         retries = 0;
+        monoOnly = false;
         if (previewOnly) { closeCamera(); previewOnly = false; }
         if (!openCamera()) return;
         startLocation();
         beginTrip();
+        gyro.on();
         recording = true;
         status = "Starting\u2026";
         DashcamService.update(ctx, true);
@@ -366,6 +505,9 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         int seq = DashPrefs.nextSeq(ctx);
         curSeq = seq;
         curFile = new File(d, String.format(Locale.US, "%06d_%s.mp4", seq, nameFmt.format(new Date(wallNow()))));
+        // a USB interface or a wireless mic receiver in stereo keeps its two channels (engine and exhaust), to be
+        // mixed when the video is made; the phone's own microphone stays mono
+        boolean stereo = withSound() && !monoOnly && Audio.get(ctx).twoChannels(Audio.DASHCAM_IN);
         try {
             cam.unlock();
             rec = new MediaRecorder();
@@ -379,7 +521,8 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             rec.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
             if (withSound()) {
                 rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-                rec.setAudioEncodingBitRate(128000);
+                rec.setAudioChannels(stereo ? 2 : 1);
+                rec.setAudioEncodingBitRate(stereo ? 192000 : 128000);
                 rec.setAudioSamplingRate(44100);
             }
             rec.setVideoSize(pw, ph);                  // the camera's best up to the chosen quality (bestSize)
@@ -389,10 +532,23 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             rec.setOutputFile(curFile.getPath());
             rec.setPreviewDisplay(new Surface(st));
             rec.prepare();
+            gyro.begin(new File(d, curFile.getName().replace(".mp4", ".gcsv")), DashPrefs.rotation(ctx), wallNow());
             rec.start();
+            gyro.started();
         } catch (Throwable t) {
             android.util.Log.w("Dashcam", "segment failed to start: " + t);
+            gyro.abort();
             discardRecorder(true);
+            if (stereo && recording) {
+                monoOnly = true;                       // this phone or input won't: mono, at once and uncounted
+                h.post(new RetryJob(this));
+                return;
+            }
+            if (test != null && recording) {           // this setting won't record: note it and go on to the next
+                noteTestClip("(would not record)");
+                if (nextTestClip()) h.post(new RetryJob(this));
+                return;
+            }
             if (++retries <= 3 && recording) {
                 status = "Recorder error, retrying\u2026";
                 h.postDelayed(new RetryJob(this), 3000);
@@ -403,9 +559,13 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         }
         retries = 0;
         segStartReal = SystemClock.elapsedRealtime();
-        segLenMs = DashPrefs.segMs(ctx);
+        segLenMs = test != null ? TEST_HOLD_MS : DashPrefs.segMs(ctx);
         clipName = curFile.getName();
         status = "Recording";
+        if (test != null) {
+            noteTestClip(clipName);
+            status = "Test: " + test.current().label;
+        }
         if (mark != null) {
             Span sp = new Span();
             sp.seq = seq;
@@ -443,6 +603,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         if (mark != null && !mark.spans.isEmpty())
             mark.spans.get(mark.spans.size() - 1).outMs = (int) (SystemClock.elapsedRealtime() - segStartReal);
         try { rec.stop(); } catch (RuntimeException e) { ok = false; }
+        if (ok) gyro.end(); else gyro.abort();
         discardRecorder(!ok);
         if (srt != null) { try { srt.close(); } catch (Throwable t) { /* ignore */ } srt = null; }
         if (ok && curFile != null) {
@@ -451,6 +612,7 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
             new File(curFile.getParentFile(), curFile.getName().replace(".mp4", ".srt")).delete();
         }
         clipName = "";
+        curFile = null;           // no longer being written: it can be deleted or locked like any other
         exportPending();          // a finished clip: a track mark that ended in it can be cut out now
     }
 
@@ -490,9 +652,23 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         });
     }
 
+    private void noteTestClip(String clip) {
+        try {
+            CameraOptions.Variant v = test.current();
+            JSONObject o = new JSONObject();
+            o.put("clip", clip);
+            o.put("label", v.label);
+            o.put("settings", new JSONObject(v.settings));
+            o.put("refused", cameraRejected);
+            test.clips.put(o);
+            writeTest();
+        } catch (Exception e) { /* the clip is what matters */ }
+    }
+
     private void rollover() {
         if (!recording) return;
         finishSegment();
+        if (test != null && !nextTestClip()) return;
         startSegment();
     }
 
@@ -502,6 +678,8 @@ final class Dashcam implements Runnable, LocationListener, Camera.PreviewCallbac
         if (!recording && rec == null && cam == null) { status = why; return; }
         recording = false;
         finishSegment();
+        endTest();
+        gyro.off();
         if (mark != null) endMark(false);
         closeCamera();
         endTrip();

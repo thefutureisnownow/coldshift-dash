@@ -24,10 +24,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 class DashcamPage extends Page implements SensorEventListener {
-    private static final int TAB_CLIPS = 0, TAB_MARKS = 1, TAB_TRIPS = 2, TAB_PREVIEW = 3, TAB_SETTINGS = 4, TAB_INTERIOR = 5;
+    private static final int TAB_CLIPS = 0, TAB_MARKS = 1, TAB_TRIPS = 2, TAB_PREVIEW = 3, TAB_SETTINGS = 4, TAB_INTERIOR = 5, TAB_CAMERA = 6;
     private static final float LIST_T = 136, LIST_B = 618, ROW_H = 62, SET_H = 56;
 
-    private static final float[][] TABS = {{571, 637}, {645, 717}, {725, 791}, {799, 885}, {893, 983}, {991, 1077}};
+    private static final float[][] TABS = {{571, 637}, {645, 717}, {725, 791}, {799, 885}, {893, 983}, {991, 1077}, {1085, 1171}};
+    private static final float CAM_T = 192;
 
     private final Dashcam dash;
     private final SimpleDateFormat when = new SimpleDateFormat("EEE d MMM  HH:mm:ss", Locale.US);
@@ -59,6 +60,7 @@ class DashcamPage extends Page implements SensorEventListener {
     @Override void onShow() {
         refreshData();
         if (tab == TAB_PREVIEW) startPreview();
+        if (tab == TAB_CAMERA) dash.loadCameraOptions();
     }
 
     @Override void onHide() { stopPreview(); }
@@ -70,6 +72,7 @@ class DashcamPage extends Page implements SensorEventListener {
         scroll = 0;
         armed = null;
         if (tab == TAB_PREVIEW) startPreview();
+        if (tab == TAB_CAMERA) dash.loadCameraOptions();
     }
 
     private Bitmap still;
@@ -295,9 +298,10 @@ class DashcamPage extends Page implements SensorEventListener {
 
     private void right(Canvas c) {
         Theme.panel(c, 555, 68, Wide.rx(1266), 625);
-        String[] names = {"Clips", "Marks", "Trips", "Preview", "Settings", "Interior"};
+        String[] names = {"Clips", "Marks", "Trips", "Preview", "Settings", "Interior", "Camera"};
         for (int i = 0; i < TABS.length; i++) Theme.chip(c, TABS[i][0], 82, TABS[i][1], 122, names[i], tab == i, 0);
         if (tab == TAB_SETTINGS) { settings(c); return; }
+        if (tab == TAB_CAMERA) { cameraTab(c); return; }
         if (tab == TAB_PREVIEW || tab == TAB_INTERIOR) {
             c.save();
             c.translate(Wide.d() / 2, 0);                   // the preview keeps its shape, centred in the panel
@@ -344,6 +348,7 @@ class DashcamPage extends Page implements SensorEventListener {
             c.drawRoundRect(d, 10, 10, Theme.P);
         }
         trash(c, 1197 + e, y + 31, arm ? 0xffffffff : 0xff8fa3bd);
+        if (arm) Theme.text(c, "Tap again to delete", 1060 + e, y + 37, 17, 0xffff8fa3, Theme.bold, Theme.RIGHT);
     }
 
     private void marksList(Canvas c) {
@@ -587,6 +592,46 @@ class DashcamPage extends Page implements SensorEventListener {
             575, 588, 12, Theme.DIM, Theme.sans, Theme.LEFT);
     }
 
+    // ---- what the camera offers ----
+
+    private void cameraTab(Canvas c) {
+        List<CameraOptions.Opt> all = dash.cameraOptions;
+        int changes = CameraOptions.variants(act, all).size() - 1;
+        Theme.text(c, "Test drive", 575, 168, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
+        Theme.chip(c, 670, 142, 770, 182, DashPrefs.testMinutes(act) + " min", false, 0);
+        Theme.chip(c, 780, 142, 920, 182, dash.testing ? "Stop test" : "Start test", dash.testing, 0);
+        String note = !dash.cameraRejected.isEmpty() ? "Camera refused: " + dash.cameraRejected
+            : changes + (changes == 1 ? " change" : " changes") + ", 20 s each, back to base between";
+        Theme.text(c, Theme.fit(note, Wide.rx(1246) - 935, 14, Theme.sans), 935, 168, 14, dash.cameraRejected.isEmpty() ? Theme.DIM : Theme.GOLD, Theme.sans, Theme.LEFT);
+        c.save();
+        c.clipRect(561, CAM_T, Wide.rx(1260), LIST_B);
+        if (all.isEmpty()) Theme.text(c, "Reading the camera\u2026", Wide.mid(561, 1260), 380, 17, Theme.SUB, Theme.sans, Theme.CENTER);
+        float y = CAM_T - scroll;
+        for (CameraOptions.Opt o : all) {
+            if (y + SET_H > CAM_T && y < LIST_B) {
+                Theme.text(c, Theme.fit(o.label, Wide.rx(840) - 575, 17, Theme.sans), 575, y + 34, 17, 0xffe8eef7, Theme.sans, Theme.LEFT);
+                Theme.chip(c, Wide.rx(850), y + 8, Wide.rx(930), y + 48, "Test", CameraOptions.inTest(act, o), 0);
+                Theme.chip(c, Wide.rx(940), y + 8, Wide.rx(1246), y + 48, o.name(CameraOptions.value(act, o)), false, 0);
+            }
+            y += SET_H;
+        }
+        c.restore();
+    }
+
+    private void cameraTap(float x, float y) {
+        if (in(x, y, 670, 142, 770, 182)) { DashPrefs.cycleTestMinutes(act); return; }
+        if (in(x, y, 780, 142, 920, 182)) {
+            if (dash.testing) dash.stop(); else dash.startTest(DashPrefs.testMinutes(act));
+            return;
+        }
+        if (y < CAM_T || y > LIST_B) return;
+        List<CameraOptions.Opt> all = dash.cameraOptions;
+        int i = (int) ((y - CAM_T + scroll) / SET_H);
+        if (i < 0 || i >= all.size()) return;
+        if (x >= Wide.rx(850) && x <= Wide.rx(930)) CameraOptions.toggleTest(act, all, all.get(i));
+        else if (x >= Wide.rx(940) && x <= Wide.rx(1246)) CameraOptions.cycle(act, all.get(i));
+    }
+
     private void padlock(Canvas c, float cx, float cy, boolean closed, int col) {
         Path sh = new Path();
         sh.addArc(new RectF(cx - 8, cy - 22, cx + 8, cy - 2), 180, 180);
@@ -623,7 +668,8 @@ class DashcamPage extends Page implements SensorEventListener {
 
     private float contentH() {
         return tab == TAB_CLIPS ? clips.size() * ROW_H : tab == TAB_MARKS ? marks.size() * ROW_H
-            : tab == TAB_TRIPS ? trips.size() * ROW_H : 0;
+            : tab == TAB_TRIPS ? trips.size() * ROW_H
+            : tab == TAB_CAMERA ? dash.cameraOptions.size() * SET_H + (CAM_T - LIST_T) : 0;
     }
 
     private float clampScroll(float s) {
@@ -664,6 +710,7 @@ class DashcamPage extends Page implements SensorEventListener {
             return;
         }
         if (tab == TAB_SETTINGS) { settingTap(x, y); return; }
+        if (tab == TAB_CAMERA) { cameraTap(x, y); return; }
         if (tab == TAB_INTERIOR) {
             float dx = Wide.d() / 2;
             if (in(x, y, SHOT_BTN.left + dx, SHOT_BTN.top, SHOT_BTN.right + dx, SHOT_BTN.bottom)) {
@@ -690,7 +737,7 @@ class DashcamPage extends Page implements SensorEventListener {
             if (dash.recording && k.file.getName().equals(dash.clipName)) return;
             if (x >= Wide.rx(1118) && x <= Wide.rx(1164)) { dash.toggleLock(k); refreshTicks = 0; }
             else if (x >= Wide.rx(1174) && x <= Wide.rx(1220)) {
-                if (k.file.getPath().equals(armed)) { dash.deleteClip(k); armed = null; refreshTicks = 0; }
+                if (k.file.getPath().equals(armed)) { dash.deleteClip(k); clips.remove(idx); armed = null; refreshTicks = 0; }
                 else { armed = k.file.getPath(); armedAt = SystemClock.elapsedRealtime(); }
             } else open(k);
         }

@@ -152,6 +152,20 @@ final class Audio {
         return null;
     }
 
+    /**
+     * Whether the job's input is a device of its own (not the phone's microphone) that offers two channels: a USB
+     * interface, or a wireless mic receiver in stereo mode (engine left, exhaust right). A device that lists no
+     * channel counts takes any, so it counts; the caller falls back to one channel if recording refuses.
+     */
+    boolean twoChannels(int job) {
+        AudioDeviceInfo d = device(job);
+        if (d == null || d.getType() == AudioDeviceInfo.TYPE_BUILTIN_MIC) return false;
+        int[] counts = d.getChannelCounts();
+        if (counts == null || counts.length == 0) return true;
+        for (int n : counts) if (n >= 2) return true;
+        return false;
+    }
+
     /** A device is chosen but not connected. */
     boolean missing(int job) { return !chosen(job).isEmpty() && device(job) == null; }
 

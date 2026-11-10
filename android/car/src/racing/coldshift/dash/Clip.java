@@ -29,4 +29,9 @@ final class Clip {
         String n = file.getName();
         return new File(file.getParentFile(), n.substring(0, n.length() - 4) + ".srt");
     }
+
+    File gyroLog() {
+        String n = file.getName();
+        return new File(file.getParentFile(), n.substring(0, n.length() - 4) + ".gcsv");
+    }
 }
